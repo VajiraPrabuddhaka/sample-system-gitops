@@ -1,0 +1,43 @@
+# Flux: OpenBao in dev mode, the k3d example's secret store (in-memory, self-seeding).
+# Values: values.yaml next to this file (ConfigMap openbao-values-base).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: openbao
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: oci://ghcr.io/openbao/charts/openbao
+  ref:
+    tag: "0.25.6" # version: openbao
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: openbao
+  namespace: flux-system
+spec:
+  releaseName: openbao
+  targetNamespace: openbao
+  storageNamespace: openbao
+  interval: 30m
+  timeout: 10m
+  chartRef:
+    kind: OCIRepository
+    name: openbao
+  install:
+    createNamespace: true
+    crds: Create
+    remediation:
+      retries: -1 # keep retrying: other units (or clusters) may still be converging
+  upgrade:
+    crds: Create
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: openbao-values-base

@@ -1,0 +1,47 @@
+# Flux: OpenChoreo control plane (+ Backstage secrets and the gateway-CA PushSecret).
+# Values: values.yaml next to this file (ConfigMap control-plane-values-base), then the
+# optional per-cluster ConfigMap control-plane-values (flux/clusters/<name>/values/control-plane.yaml).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: control-plane
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: oci://cr.openchoreo.dev/openchoreo/helm-charts/openchoreo-control-plane
+  ref:
+    tag: "1.4.0-m.1" # version: control-plane
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: control-plane
+  namespace: flux-system
+spec:
+  releaseName: openchoreo-control-plane
+  targetNamespace: openchoreo-control-plane
+  storageNamespace: openchoreo-control-plane
+  interval: 30m
+  timeout: 15m
+  chartRef:
+    kind: OCIRepository
+    name: control-plane
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: -1 # keep retrying: other units (or clusters) may still be converging
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: control-plane-values-base
+    - kind: ConfigMap
+      name: control-plane-values # per-cluster values, optional
+      optional: true

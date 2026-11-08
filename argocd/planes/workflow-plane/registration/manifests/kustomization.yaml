@@ -1,0 +1,6 @@
+# planes/workflow-plane/registration: ClusterWorkflowPlane + agent CA (applied on the control-plane cluster).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - agent-ca.yaml
+  - plane.yaml

@@ -1,0 +1,15 @@
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterObservabilityPlane
+metadata:
+  name: default
+spec:
+  planeID: default
+  clusterAgent:
+    clientCA:
+      secretKeyRef:
+        name: agent-ca-observabilityplane-default
+        namespace: openchoreo-control-plane
+        key: ca.crt
+  observerURL: http://observer.openchoreo.invalid # patched per cluster
+  secretStoreRef:
+    name: default

@@ -1,0 +1,4 @@
+# ThunderID (default identity provider). Everything it needs is cluster-specific
+# (public URL, hostnames, OAuth clients and redirect URIs), so it lives in
+# clusters/<name>/values/thunder.yaml.
+{}

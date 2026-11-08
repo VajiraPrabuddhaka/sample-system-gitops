@@ -1,0 +1,49 @@
+# Flux: observability module traces-opensearch.
+# Values: values.yaml next to this file (ConfigMap obs-traces-opensearch-values-base), then the
+# optional per-cluster ConfigMap obs-traces-opensearch-values (flux/clusters/<name>/values/obs-traces-opensearch.yaml).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: obs-traces-opensearch
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: oci://cr.openchoreo.dev/openchoreo/helm-charts/observability-tracing-opensearch
+  ref:
+    tag: "0.9.0" # version: obs-traces-opensearch
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: obs-traces-opensearch
+  namespace: flux-system
+spec:
+  releaseName: observability-traces-opensearch
+  targetNamespace: openchoreo-observability-plane
+  storageNamespace: openchoreo-observability-plane
+  interval: 30m
+  timeout: 15m
+  chartRef:
+    kind: OCIRepository
+    name: obs-traces-opensearch
+  dependsOn:
+    - name: obs-logs-opensearch
+  install:
+    createNamespace: true
+    crds: Create
+    remediation:
+      retries: -1 # keep retrying: other units (or clusters) may still be converging
+  upgrade:
+    crds: Create
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: obs-traces-opensearch-values-base
+    - kind: ConfigMap
+      name: obs-traces-opensearch-values # per-cluster values, optional
+      optional: true

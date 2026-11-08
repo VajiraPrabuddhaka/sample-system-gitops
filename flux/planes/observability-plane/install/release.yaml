@@ -1,0 +1,47 @@
+# Flux: OpenChoreo observability plane (+ OpenSearch credentials, observer secret, trust relay).
+# Values: values.yaml next to this file (ConfigMap observability-plane-values-base), then the
+# optional per-cluster ConfigMap observability-plane-values (flux/clusters/<name>/values/observability-plane.yaml).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: observability-plane
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: oci://cr.openchoreo.dev/openchoreo/helm-charts/openchoreo-observability-plane
+  ref:
+    tag: "1.4.0-m.1" # version: observability-plane
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: observability-plane
+  namespace: flux-system
+spec:
+  releaseName: openchoreo-observability-plane
+  targetNamespace: openchoreo-observability-plane
+  storageNamespace: openchoreo-observability-plane
+  interval: 30m
+  timeout: 25m
+  chartRef:
+    kind: OCIRepository
+    name: observability-plane
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: -1 # keep retrying: other units (or clusters) may still be converging
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: observability-plane-values-base
+    - kind: ConfigMap
+      name: observability-plane-values # per-cluster values, optional
+      optional: true

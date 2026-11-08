@@ -1,0 +1,6 @@
+# validate.sh / CI scratch
+.charts/
+.schemas/
+*.tmp
+.DS_Store
+__pycache__/

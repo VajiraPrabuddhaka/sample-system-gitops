@@ -1,0 +1,42 @@
+# Flux: in-cluster image registry for k3d builds (twuni/docker-registry).
+# Values: values.yaml next to this file (ConfigMap registry-values-base).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: registry
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://twuni.github.io/docker-registry.helm
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: registry
+  namespace: flux-system
+spec:
+  releaseName: registry
+  targetNamespace: openchoreo-workflow-plane
+  storageNamespace: openchoreo-workflow-plane
+  interval: 30m
+  timeout: 5m
+  chart:
+    spec:
+      chart: docker-registry
+      version: "3.0.0" # version: registry
+      sourceRef:
+        kind: HelmRepository
+        name: registry
+  install:
+    createNamespace: true
+    crds: Create
+    remediation:
+      retries: -1 # keep retrying: other units (or clusters) may still be converging
+  upgrade:
+    crds: Create
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: registry-values-base

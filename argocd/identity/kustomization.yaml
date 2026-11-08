@@ -1,0 +1,6 @@
+# argocd/identity: ThunderID identity provider (optional: replace with your own IdP).
+# The cluster's root app applies application.yaml; values.yaml and manifests/ are read by the Application from Git.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - application.yaml

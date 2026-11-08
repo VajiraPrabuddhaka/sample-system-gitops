@@ -1,0 +1,7 @@
+# flux/clusters/k3d-single/k3d/coredns: CoreDNS rewrite of *.openchoreo.localhost to host.k3d.internal, so pods reach
+# the gateways through the k3d load balancer (k3d only).
+# One Flux Kustomization applies this directory (flux/clusters/<name>/units.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - manifests

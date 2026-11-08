@@ -1,0 +1,6 @@
+# argocd/planes/observability-plane/registration: ClusterObservabilityPlane "default" + the agent CA it trusts. Applied on the CONTROL-PLANE
+# cluster, wherever the observability plane itself runs. Healthy once its agent connects.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - application.yaml

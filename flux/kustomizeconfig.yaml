@@ -1,0 +1,10 @@
+# Flux only. Lets kustomize rewrite HelmRelease.spec.valuesFrom names when a unit's
+# configMapGenerator appends a content hash, so a change to a unit's values.yaml rolls
+# the release. (Per-cluster values ConfigMaps have fixed names and carry the
+# reconcile.fluxcd.io/watch label instead, see flux/clusters/k3d-single/kustomization.yaml.)
+nameReference:
+  - kind: ConfigMap
+    version: v1
+    fieldSpecs:
+      - path: spec/valuesFrom/name
+        kind: HelmRelease

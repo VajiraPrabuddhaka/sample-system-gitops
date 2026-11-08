@@ -1,0 +1,21 @@
+# Trust relay, control-plane side (2/2): pull the agent CA that the workflow-plane published
+# into a Secret the cluster-gateway reads when the agent connects
+# (clientCA.secretKeyRef). The gateway re-reads it on every connection, so a renewed
+# agent certificate is picked up without restarts.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: agent-ca-workflowplane-default
+  namespace: openchoreo-control-plane
+spec:
+  refreshInterval: 10m
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: default
+  target:
+    name: agent-ca-workflowplane-default
+  data:
+    - secretKey: ca.crt
+      remoteRef:
+        key: openchoreo-trust-agent-ca-workflowplane-default
+        property: value

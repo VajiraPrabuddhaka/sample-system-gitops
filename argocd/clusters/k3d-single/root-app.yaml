@@ -1,0 +1,24 @@
+# Plug OpenChoreo into a cluster that already runs Argo CD: `kubectl apply -f` this file
+# (after the argocd-cm health checks in argocd/argocd-cm-patch.yaml). It syncs
+# argocd/clusters/k3d-single, which creates one Application per unit, ordered by sync wave.
+#
+# Fork or mirror: scripts/set-git-source.sh <url> [branch] rewrites every repoURL and
+# targetRevision that points at this repo.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openchoreo
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  source:
+    repoURL: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git
+    targetRevision: main
+    path: argocd/clusters/k3d-single
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

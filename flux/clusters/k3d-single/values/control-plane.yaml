@@ -1,0 +1,38 @@
+# k3d-single: everything on *.openchoreo.localhost through the k3d load balancer, plain
+# HTTP on the ports k3d maps to the host (8080/8443).
+# Derived from openchoreo/openchoreo@v1.4.0-m.1:install/k3d/single-cluster/values-cp.yaml
+# (backstage.secretName/features live in the unit's values.yaml).
+gateway:
+  httpPort: 8080
+  httpsPort: 8443
+  tls:
+    enabled: false
+openchoreoApi:
+  http:
+    hostnames:
+    - api.openchoreo.localhost
+  config:
+    server:
+      publicUrl: http://api.openchoreo.localhost:8080
+    audit:
+      enabled: true
+      observabilityPlaneRef:
+        kind: ClusterObservabilityPlane
+        name: default
+backstage:
+  features:
+    costInsights:
+      enabled: true
+  baseUrl: http://openchoreo.localhost:8080
+  http:
+    hostnames:
+    - openchoreo.localhost
+portalAssistant:
+  config:
+    observerApiUrl: http://observer.openchoreo.localhost:11080
+security:
+  oidc:
+    issuer: http://thunder.openchoreo.localhost:8080
+    jwksUrl: http://thunder.openchoreo.localhost:8080/oauth2/jwks
+    authorizationUrl: http://thunder.openchoreo.localhost:8080/oauth2/authorize
+    tokenUrl: http://thunder.openchoreo.localhost:8080/oauth2/token

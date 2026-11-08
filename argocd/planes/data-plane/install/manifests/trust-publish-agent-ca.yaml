@@ -1,0 +1,29 @@
+# Trust relay, plane side (2/2): publish this agent's CA (public cert only) so the
+# control plane can verify the agent's client certificate. The chart's agent cert is
+# self-signed and rotates its key on renewal; re-publishing keeps the control plane's
+# copy current. The remote key encodes <planeType>-<planeID>: if you change
+# clusterAgent.planeID, patch remoteKey (and the matching registration) too.
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: cluster-agent-ca
+  namespace: openchoreo-data-plane
+spec:
+  refreshInterval: 10m
+  updatePolicy: Replace
+  deletionPolicy: None
+  secretStoreRefs:
+    - kind: ClusterSecretStore
+      name: default
+  selector:
+    secret:
+      name: cluster-agent-tls
+  template:
+    engineVersion: v2
+    data:
+      value: '{{ dict "value" (index . "ca.crt" | toString) | toJson }}'
+  data:
+    - match:
+        secretKey: value
+        remoteRef:
+          remoteKey: openchoreo-trust-agent-ca-dataplane-default

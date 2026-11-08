@@ -1,0 +1,7 @@
+# planes/workflow-plane/templates: checkout + build ClusterWorkflowTemplates.
+# The registry-specific steps (publish-image, generate-workload) come from the cluster.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - checkout-source.yaml
+  - build-templates.yaml

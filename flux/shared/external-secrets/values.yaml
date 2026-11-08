@@ -1,0 +1,9 @@
+# External Secrets Operator: values every cluster gets.
+installCRDs: true
+
+# The trust relay writes the cluster-gateway CA into a *ConfigMap* (the cluster-agent
+# only mounts it from a ConfigMap). ESO can only target ConfigMaps through "generic
+# targets", which is alpha: this adds --unsafe-allow-generic-targets=true and ConfigMap
+# RBAC to the controller.
+genericTargets:
+  enabled: true

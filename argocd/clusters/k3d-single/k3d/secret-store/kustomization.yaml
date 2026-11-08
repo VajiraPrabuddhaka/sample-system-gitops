@@ -1,0 +1,6 @@
+# argocd/clusters/k3d-single/k3d/secret-store: ClusterSecretStore "default" backed by the in-cluster OpenBao. Every OpenChoreo
+# unit reads secrets through a store with this name (keys: `scripts/seed-secrets.sh list`).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - application.yaml

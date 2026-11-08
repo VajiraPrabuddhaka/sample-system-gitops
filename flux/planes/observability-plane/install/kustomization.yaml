@@ -1,0 +1,14 @@
+# flux/planes/observability-plane/install: OpenChoreo observability plane.
+# One Flux Kustomization applies this directory (flux/clusters/<name>/units.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - manifests
+  - release.yaml
+configMapGenerator:
+  - name: observability-plane-values-base
+    namespace: flux-system
+    files:
+      - values.yaml
+configurations:
+  - ../../../kustomizeconfig.yaml

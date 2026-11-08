@@ -1,0 +1,43 @@
+# k3d-single: observer, RCA and FinOps agents on *.openchoreo.localhost, plain HTTP on
+# the ports k3d maps to the host (11080/11085).
+# Derived from openchoreo/openchoreo@v1.4.0-m.1:install/k3d/single-cluster/values-op.yaml
+# (observer.secretName lives in the unit's values.yaml).
+gateway:
+  httpPort: 11080
+  httpsPort: 11085
+  tls:
+    enabled: false
+finOpsAgent:
+  openchoreoApiUrl: http://api.openchoreo.localhost:8080
+  cors:
+    allowedOrigins:
+    - http://openchoreo.localhost:8080
+  http:
+    hostnames:
+    - finops-agent.openchoreo.localhost
+observer:
+  controlPlaneApiUrl: http://api.openchoreo.localhost:8080
+  cors:
+    allowedOrigins:
+    - http://openchoreo.localhost:8080
+  extraEnvs:
+  - name: OBSERVER_BASE_URL
+    value: http://observer.openchoreo.localhost:11080
+  - name: AUTHZ_TIMEOUT
+    value: 30s
+  http:
+    hostnames:
+    - observer.openchoreo.localhost
+security:
+  oidc:
+    jwksUrl: http://thunder-service.thunder.svc.cluster.local:8090/oauth2/jwks
+    tokenUrl: http://thunder-service.thunder.svc.cluster.local:8090/oauth2/token
+    authServerBaseUrl: http://thunder.openchoreo.localhost:8080
+rca:
+  openchoreoApiUrl: http://api.openchoreo.localhost:8080
+  cors:
+    allowedOrigins:
+    - http://openchoreo.localhost:8080
+  http:
+    hostnames:
+    - rca-agent.openchoreo.localhost

@@ -1,0 +1,48 @@
+# Flux: External Secrets Operator, which syncs secrets from the ClusterSecretStore
+# "default" and runs the trust relay.
+# Values: values.yaml next to this file (ConfigMap external-secrets-values-base), then the
+# optional per-cluster ConfigMap external-secrets-values (flux/clusters/<name>/values/external-secrets.yaml).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: external-secrets
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: oci://ghcr.io/external-secrets/charts/external-secrets
+  ref:
+    tag: "2.0.1" # version: external-secrets
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: external-secrets
+  namespace: flux-system
+spec:
+  releaseName: external-secrets
+  targetNamespace: external-secrets
+  storageNamespace: external-secrets
+  interval: 30m
+  timeout: 5m
+  chartRef:
+    kind: OCIRepository
+    name: external-secrets
+  install:
+    createNamespace: true
+    crds: Create
+    remediation:
+      retries: -1 # keep retrying: other units (or clusters) may still be converging
+  upgrade:
+    crds: Create
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: external-secrets-values-base
+    - kind: ConfigMap
+      name: external-secrets-values # per-cluster values, optional
+      optional: true

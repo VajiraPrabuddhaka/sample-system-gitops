@@ -1,0 +1,107 @@
+# Argo CD only: the public OCI Helm registries the Applications pull charts from.
+# Argo CD needs OCI registries declared as repositories (enableOCI); these Secrets do it
+# declaratively, so a stock Argo CD install needs no repository setup. No credentials.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openchoreo-helm-openchoreo
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+stringData:
+  name: openchoreo-openchoreo
+  type: helm
+  enableOCI: "true"
+  url: cr.openchoreo.dev/openchoreo/helm-charts
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openchoreo-helm-openchoreo-ghcr
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+stringData:
+  name: openchoreo-openchoreo-ghcr
+  type: helm
+  enableOCI: "true"
+  url: ghcr.io/openchoreo/helm-charts
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openchoreo-helm-jetstack
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+stringData:
+  name: openchoreo-jetstack
+  type: helm
+  enableOCI: "true"
+  url: quay.io/jetstack/charts
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openchoreo-helm-external-secrets
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+stringData:
+  name: openchoreo-external-secrets
+  type: helm
+  enableOCI: "true"
+  url: ghcr.io/external-secrets/charts
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openchoreo-helm-kgateway
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+stringData:
+  name: openchoreo-kgateway
+  type: helm
+  enableOCI: "true"
+  url: cr.kgateway.dev/kgateway-dev/charts
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openchoreo-helm-thunder-id
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+stringData:
+  name: openchoreo-thunder-id
+  type: helm
+  enableOCI: "true"
+  url: ghcr.io/thunder-id/helm-charts
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openchoreo-helm-openbao
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+stringData:
+  name: openchoreo-openbao
+  type: helm
+  enableOCI: "true"
+  url: ghcr.io/openbao/charts

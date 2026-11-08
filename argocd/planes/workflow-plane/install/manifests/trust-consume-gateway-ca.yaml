@@ -1,0 +1,23 @@
+# Trust relay, plane side (1/2): pull the cluster-gateway CA published by the control
+# plane into the ConfigMap the cluster-agent mounts (clusterAgent.tls.serverCAConfigMap).
+# Targets a ConfigMap, so ESO needs genericTargets.enabled (shared/external-secrets/values.yaml).
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: cluster-gateway-ca
+  namespace: openchoreo-workflow-plane
+spec:
+  refreshInterval: 10m
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: default
+  target:
+    name: cluster-gateway-ca
+    manifest:
+      apiVersion: v1
+      kind: ConfigMap
+  data:
+    - secretKey: ca.crt
+      remoteRef:
+        key: openchoreo-trust-gateway-ca
+        property: value

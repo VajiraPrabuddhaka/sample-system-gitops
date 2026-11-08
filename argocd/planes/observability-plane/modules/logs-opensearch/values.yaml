@@ -1,0 +1,8 @@
+# Logs module (OpenSearch + Fluent Bit). Same-cluster defaults; a cluster that only
+# ships logs to a remote observability plane overrides this to collector-only.
+openSearchSetup:
+  openSearchSecretName: opensearch-admin-credentials
+adapter:
+  openSearchSecretName: opensearch-admin-credentials
+auditLogs:
+  enabled: true

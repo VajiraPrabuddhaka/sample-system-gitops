@@ -1,0 +1,36 @@
+# Static validation on every PR: kustomize builds of both trees (flux/, argocd/), tree
+# parity and references (scripts/check-tree.py), version pins, kubeconform (OpenChoreo CRDs
+# included), and helm template of the OpenChoreo charts with each cluster's merged values.
+# No cluster needed.
+name: validate
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.19.0
+      - name: Install kustomize, kubeconform, PyYAML
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/bin"; echo "$HOME/bin" >> "$GITHUB_PATH"
+          curl -fsSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.7.1/kustomize_v5.7.1_linux_amd64.tar.gz" | tar -xz -C "$HOME/bin"
+          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz" | tar -xz -C "$HOME/bin" kubeconform
+          python3 -m pip install --quiet pyyaml
+      - name: OpenChoreo CRD schemas
+        run: |
+          set -euo pipefail
+          v=$(sed -n 's/^openchoreo: "\(.*\)"/\1/p' versions.yaml)
+          for c in openchoreo-control-plane openchoreo-observability-plane; do
+            helm pull "oci://cr.openchoreo.dev/openchoreo/helm-charts/$c" --version "$v" --untar --untardir .charts
+          done
+          scripts/crd-schemas.py .schemas .charts/*/crds
+          echo "KUBECONFORM_EXTRA_SCHEMAS=$PWD/.schemas/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json" >> "$GITHUB_ENV"
+      - run: scripts/validate.sh

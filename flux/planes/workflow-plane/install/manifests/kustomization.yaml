@@ -1,0 +1,7 @@
+# planes/workflow-plane/install: plain manifests (both engines apply this directory).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - trust-consume-gateway-ca.yaml
+  - trust-publish-agent-ca.yaml

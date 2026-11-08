@@ -1,0 +1,30 @@
+# Gateway API standard-channel CRDs, straight from the upstream repo at a pinned tag.
+# config/crd/kustomization.yaml in that tag is the same set as standard-install.yaml.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: gateway-api
+  namespace: flux-system
+spec:
+  interval: 24h
+  url: https://github.com/kubernetes-sigs/gateway-api
+  ref:
+    tag: v1.5.1 # version: gateway-api-crds
+  ignore: |
+    /*
+    !/config/
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: gateway-api-crds
+  namespace: flux-system
+spec:
+  interval: 1h
+  sourceRef:
+    kind: GitRepository
+    name: gateway-api
+  path: ./config/crd
+  prune: false # never garbage-collect CRDs
+  wait: true
+  timeout: 5m

@@ -1,0 +1,3 @@
+# kgateway controller: no overrides needed. One install per cluster watches Gateways
+# in every namespace.
+{}

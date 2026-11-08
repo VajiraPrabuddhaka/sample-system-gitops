@@ -1,0 +1,5 @@
+# argocd/planes/control-plane/defaults: OpenChoreo default resources (optional).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - application.yaml

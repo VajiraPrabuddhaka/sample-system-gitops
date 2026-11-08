@@ -1,0 +1,7 @@
+# OpenChoreo control plane: values every cluster that runs it gets.
+# Hostnames, URLs, ports and TLS are per cluster: clusters/<name>/values/control-plane.yaml.
+backstage:
+  secretName: backstage-secrets # synced by manifests/backstage-secrets.yaml
+features:
+  secretManagement:
+    enabled: true # needs the writable ClusterSecretStore "default"

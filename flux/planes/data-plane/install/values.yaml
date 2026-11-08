@@ -1,0 +1,3 @@
+# OpenChoreo data plane: values every cluster that runs one gets.
+clusterAgent:
+  planeID: default # CN of the agent cert; must match the ClusterDataPlane planeID

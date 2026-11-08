@@ -1,0 +1,7 @@
+# flux/planes/data-plane/registration: ClusterDataPlane "default" + the agent CA it trusts. Applied on the CONTROL-PLANE
+# cluster, wherever the data plane itself runs. Healthy once its agent connects.
+# One Flux Kustomization applies this directory (flux/clusters/<name>/units.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - manifests

@@ -1,0 +1,31 @@
+# Registers the data plane with the control plane. Cluster-specific fields (gateway
+# hosts and ports) are patched by the cluster: spec.patches on the Flux Kustomization
+# (flux/clusters/<name>/units.yaml) or kustomize.patches on the Argo CD Application
+# (argocd/clusters/<name>/kustomization.yaml).
+apiVersion: openchoreo.dev/v1alpha1
+kind: ClusterDataPlane
+metadata:
+  name: default
+spec:
+  planeID: default # = clusterAgent.planeID in the data plane values
+  clusterAgent:
+    clientCA:
+      secretKeyRef:
+        name: agent-ca-dataplane-default
+        namespace: openchoreo-control-plane
+        key: ca.crt
+  secretStoreRef:
+    name: default
+  gateway:
+    ingress:
+      external:
+        name: gateway-default
+        namespace: openchoreo-data-plane
+        http:
+          host: apps.openchoreo.invalid # patched per cluster
+          listenerName: http
+          port: 80
+  # Remove (set to null in a patch) if you run no observability plane.
+  observabilityPlaneRef:
+    kind: ClusterObservabilityPlane
+    name: default

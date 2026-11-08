@@ -1,0 +1,38 @@
+# Argo CD: OpenChoreo's default environments, pipeline and component types, applied from
+# upstream at the release tag (nothing copied here), plus the default namespace label.
+# Optional: drop it and plug your fork of openchoreo/sample-gitops instead.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openchoreo-platform-defaults
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "80"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  sources:
+    - repoURL: https://github.com/openchoreo/openchoreo.git
+      targetRevision: v1.4.0-m.1 # version: platform-defaults
+      path: samples/getting-started
+      directory:
+        include: all.yaml
+    - repoURL: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git
+      targetRevision: main
+      path: argocd/planes/control-plane/defaults/manifests
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: -1 # keep retrying: other units (or clusters) may still be converging
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

@@ -1,0 +1,7 @@
+# OpenChoreo observability plane: values every cluster that runs one gets.
+clusterAgent:
+  planeID: default
+observer:
+  secretName: observer-secret # synced by manifests/observer-secret.yaml
+  audit:
+    enabled: true

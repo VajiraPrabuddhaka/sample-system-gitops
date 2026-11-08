@@ -1,0 +1,8 @@
+# k3d: expose the Argo Workflows UI on the host at http://localhost:10081.
+argo-workflows:
+  server:
+    enabled: true
+    serviceType: LoadBalancer
+    servicePort: 10081
+    authModes:
+      - server

@@ -1,0 +1,32 @@
+# Argo CD: CoreDNS rewrite of *.openchoreo.localhost to host.k3d.internal, so pods reach
+# the gateways through the k3d load balancer (k3d only).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openchoreo-coredns
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "20"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  sources:
+    - repoURL: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git
+      targetRevision: main
+      path: argocd/clusters/k3d-single/k3d/coredns/manifests
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: -1 # keep retrying: other units (or clusters) may still be converging
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

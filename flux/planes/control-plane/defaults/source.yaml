@@ -1,0 +1,36 @@
+# OpenChoreo's default platform resources (environments, deployment pipeline,
+# component types, traits, workflows), applied from upstream at the release tag so
+# nothing is copied into this repo. To manage them yourself instead, drop this unit
+# and plug your fork of openchoreo/sample-gitops.
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: openchoreo-samples
+  namespace: flux-system
+spec:
+  interval: 24h
+  url: https://github.com/openchoreo/openchoreo
+  ref:
+    tag: v1.4.0-m.1 # version: platform-defaults
+  ignore: |
+    /*
+    !/samples/
+    /samples/*
+    !/samples/getting-started/
+    /samples/getting-started/*
+    !/samples/getting-started/all.yaml
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-getting-started
+  namespace: flux-system
+spec:
+  interval: 30m
+  sourceRef:
+    kind: GitRepository
+    name: openchoreo-samples
+  path: ./samples/getting-started
+  prune: true
+  wait: false # bindings only turn Ready once workloads deploy
+  timeout: 5m

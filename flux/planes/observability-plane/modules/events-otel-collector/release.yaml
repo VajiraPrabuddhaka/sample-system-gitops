@@ -1,0 +1,49 @@
+# Flux: observability module events-otel-collector.
+# Values: values.yaml next to this file (ConfigMap obs-events-otel-collector-values-base), then the
+# optional per-cluster ConfigMap obs-events-otel-collector-values (flux/clusters/<name>/values/obs-events-otel-collector.yaml).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: obs-events-otel-collector
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: oci://cr.openchoreo.dev/openchoreo/helm-charts/observability-events-otel-collector
+  ref:
+    tag: "0.2.1" # version: obs-events-otel-collector
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: obs-events-otel-collector
+  namespace: flux-system
+spec:
+  releaseName: observability-events-otel-collector
+  targetNamespace: openchoreo-observability-plane
+  storageNamespace: openchoreo-observability-plane
+  interval: 30m
+  timeout: 5m
+  chartRef:
+    kind: OCIRepository
+    name: obs-events-otel-collector
+  dependsOn:
+    - name: obs-logs-opensearch
+  install:
+    createNamespace: true
+    crds: Create
+    remediation:
+      retries: -1 # keep retrying: other units (or clusters) may still be converging
+  upgrade:
+    crds: Create
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: obs-events-otel-collector-values-base
+    - kind: ConfigMap
+      name: obs-events-otel-collector-values # per-cluster values, optional
+      optional: true

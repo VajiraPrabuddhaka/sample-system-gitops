@@ -1,0 +1,47 @@
+# Flux: OpenChoreo data plane (+ trust relay).
+# Values: values.yaml next to this file (ConfigMap data-plane-values-base), then the
+# optional per-cluster ConfigMap data-plane-values (flux/clusters/<name>/values/data-plane.yaml).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: data-plane
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: oci://cr.openchoreo.dev/openchoreo/helm-charts/openchoreo-data-plane
+  ref:
+    tag: "1.4.0-m.1" # version: data-plane
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: data-plane
+  namespace: flux-system
+spec:
+  releaseName: openchoreo-data-plane
+  targetNamespace: openchoreo-data-plane
+  storageNamespace: openchoreo-data-plane
+  interval: 30m
+  timeout: 15m
+  chartRef:
+    kind: OCIRepository
+    name: data-plane
+  install:
+    createNamespace: true
+    crds: CreateReplace
+    remediation:
+      retries: -1 # keep retrying: other units (or clusters) may still be converging
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: data-plane-values-base
+    - kind: ConfigMap
+      name: data-plane-values # per-cluster values, optional
+      optional: true

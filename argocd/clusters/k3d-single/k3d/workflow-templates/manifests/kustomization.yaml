@@ -1,0 +1,6 @@
+# clusters/k3d-single/k3d/workflow-templates: registry-specific build steps (k3d only).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - publish-image-k3d.yaml
+  - generate-workload-k3d.yaml

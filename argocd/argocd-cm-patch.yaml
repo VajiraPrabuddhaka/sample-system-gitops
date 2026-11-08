@@ -1,0 +1,56 @@
+# Health checks this repo needs in argocd-cm. Apply once after installing Argo CD:
+#   kubectl -n argocd patch configmap argocd-cm --patch-file argocd/argocd-cm-patch.yaml
+# Installed Argo CD with Helm? Put the same keys under configs.cm in your values.
+#
+# Without them everything still converges (every Application retries), but the root
+# app no longer waits for one wave to be Healthy before starting the next, and plane
+# registrations show Healthy before their agent connects.
+data:
+  # App of apps: the root Application waits for each child Application to be Healthy
+  # before the next sync wave (Argo CD removed this check by default in 1.8).
+  resource.customizations.health.argoproj.io_Application: |
+    hs = {}
+    hs.status = "Progressing"
+    hs.message = ""
+    if obj.status ~= nil and obj.status.health ~= nil then
+      hs.status = obj.status.health.status
+      if obj.status.health.message ~= nil then
+        hs.message = obj.status.health.message
+      end
+    end
+    return hs
+  # OpenChoreo plane registrations are Healthy once their cluster agent is connected
+  # (they have no Ready condition).
+  resource.customizations.health.openchoreo.dev_ClusterDataPlane: |
+    hs = { status = "Progressing", message = "Waiting for the cluster agent to connect" }
+    if obj.status ~= nil and obj.status.agentConnection ~= nil and obj.status.agentConnection.connected == true then
+      hs.status = "Healthy"
+      hs.message = "Cluster agent connected"
+    end
+    return hs
+  resource.customizations.health.openchoreo.dev_ClusterWorkflowPlane: |
+    hs = { status = "Progressing", message = "Waiting for the cluster agent to connect" }
+    if obj.status ~= nil and obj.status.agentConnection ~= nil and obj.status.agentConnection.connected == true then
+      hs.status = "Healthy"
+      hs.message = "Cluster agent connected"
+    end
+    return hs
+  resource.customizations.health.openchoreo.dev_ClusterObservabilityPlane: |
+    hs = { status = "Progressing", message = "Waiting for the cluster agent to connect" }
+    if obj.status ~= nil and obj.status.agentConnection ~= nil and obj.status.agentConnection.connected == true then
+      hs.status = "Healthy"
+      hs.message = "Cluster agent connected"
+    end
+    return hs
+  # PushSecret (trust relay): Progressing until the source Secret exists and is pushed.
+  resource.customizations.health.external-secrets.io_PushSecret: |
+    hs = { status = "Progressing", message = "Waiting for the PushSecret to sync" }
+    if obj.status ~= nil and obj.status.conditions ~= nil then
+      for _, c in ipairs(obj.status.conditions) do
+        if c.type == "Ready" then
+          if c.status == "True" then hs.status = "Healthy" end
+          if c.message ~= nil then hs.message = c.message end
+        end
+      end
+    end
+    return hs

@@ -1,0 +1,6 @@
+# k3d-single: plain HTTP on the ports k3d maps to the host (19080/19443).
+gateway:
+  httpPort: 19080
+  httpsPort: 19443
+  tls:
+    enabled: false

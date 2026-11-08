@@ -1,0 +1,118 @@
+# Argo CD entry point for k3d-single: root-app.yaml points an Application at this directory.
+# It lists the units this cluster runs (one Application each; order = sync waves) and
+# patches in this cluster's Helm values and registration details.
+#
+# To run OpenChoreo on another cluster, copy this directory, drop the k3d units, point
+# at your own pieces and change values/. The units under argocd/shared, argocd/identity
+# and argocd/planes stay as they are.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../shared/helm-repositories
+  - ../../shared/gateway-api-crds
+  - ../../shared/cert-manager
+  - ../../shared/external-secrets
+  - ../../shared/kgateway
+  - k3d/openbao
+  - k3d/secret-store
+  - k3d/coredns
+  - ../../identity
+  - ../../planes/control-plane/install
+  - ../../planes/data-plane/install
+  - ../../planes/workflow-plane/install
+  - ../../planes/observability-plane/install
+  - ../../planes/workflow-plane/templates
+  - k3d/registry
+  - k3d/workflow-templates
+  - ../../planes/observability-plane/modules
+  - ../../planes/data-plane/registration
+  - ../../planes/workflow-plane/registration
+  - ../../planes/observability-plane/registration
+  - ../../planes/control-plane/defaults
+patches:
+  # Per-cluster Helm values: appended after the unit's own values.yaml (later wins).
+  - target:
+      kind: Application
+      name: openchoreo-control-plane
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valueFiles/-
+        value: $values/argocd/clusters/k3d-single/values/control-plane.yaml
+  - target:
+      kind: Application
+      name: openchoreo-data-plane
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valueFiles/-
+        value: $values/argocd/clusters/k3d-single/values/data-plane.yaml
+  - target:
+      kind: Application
+      name: openchoreo-workflow-plane
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valueFiles/-
+        value: $values/argocd/clusters/k3d-single/values/workflow-plane.yaml
+  - target:
+      kind: Application
+      name: openchoreo-observability-plane
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valueFiles/-
+        value: $values/argocd/clusters/k3d-single/values/observability-plane.yaml
+  - target:
+      kind: Application
+      name: openchoreo-thunder
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valueFiles/-
+        value: $values/argocd/clusters/k3d-single/values/thunder.yaml
+  - target:
+      kind: Application
+      name: openchoreo-obs-logs-opensearch
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valueFiles/-
+        value: $values/argocd/clusters/k3d-single/values/obs-logs-opensearch.yaml
+  # Registration: where this cluster's data plane serves workloads and where the
+  # observer is reachable (k3d load balancer ports).
+  - target:
+      kind: Application
+      name: openchoreo-data-plane-registration
+    patch: |-
+      - op: add
+        path: /spec/sources/0/kustomize
+        value:
+          patches:
+            - target:
+                kind: ClusterDataPlane
+                name: default
+              patch: |-
+                apiVersion: openchoreo.dev/v1alpha1
+                kind: ClusterDataPlane
+                metadata:
+                  name: default
+                spec:
+                  gateway:
+                    ingress:
+                      external:
+                        http:
+                          host: openchoreoapis.localhost
+                          port: 19080
+  - target:
+      kind: Application
+      name: openchoreo-observability-plane-registration
+    patch: |-
+      - op: add
+        path: /spec/sources/0/kustomize
+        value:
+          patches:
+            - target:
+                kind: ClusterObservabilityPlane
+                name: default
+              patch: |-
+                apiVersion: openchoreo.dev/v1alpha1
+                kind: ClusterObservabilityPlane
+                metadata:
+                  name: default
+                spec:
+                  observerURL: http://observer.openchoreo.localhost:11080

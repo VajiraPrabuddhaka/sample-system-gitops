@@ -1,0 +1,9 @@
+# planes/observability-plane/install: plain manifests (both engines apply this directory).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - opensearch-admin-credentials.yaml
+  - observer-secret.yaml
+  - trust-consume-gateway-ca.yaml
+  - trust-publish-agent-ca.yaml

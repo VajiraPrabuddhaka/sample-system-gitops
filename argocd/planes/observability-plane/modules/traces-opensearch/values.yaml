@@ -1,0 +1,5 @@
+# Tracing module. Reuses the OpenSearch installed by the logs module.
+openSearch:
+  enabled: false
+openSearchSetup:
+  openSearchSecretName: opensearch-admin-credentials

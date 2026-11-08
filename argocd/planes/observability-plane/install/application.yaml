@@ -1,0 +1,61 @@
+# Argo CD: OpenChoreo observability plane (+ OpenSearch credentials, observer secret, trust relay).
+# Values: values.yaml next to this file; a cluster appends its own file to valueFiles
+# (argocd/clusters/<name>/kustomization.yaml).
+# Also applies argocd/planes/observability-plane/install/manifests.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openchoreo-observability-plane
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "50"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openchoreo-observability-plane
+  sources:
+    - repoURL: cr.openchoreo.dev/openchoreo/helm-charts
+      chart: openchoreo-observability-plane
+      targetRevision: "1.4.0-m.1" # version: observability-plane
+      helm:
+        releaseName: openchoreo-observability-plane
+        valueFiles:
+          - $values/argocd/planes/observability-plane/install/values.yaml
+    - repoURL: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git
+      targetRevision: main
+      ref: values
+    - repoURL: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git
+      targetRevision: main
+      path: argocd/planes/observability-plane/install/manifests
+  # cert-manager and ESO inject CA bundles into webhooks and CRD conversion configs;
+  # don't report (or revert) that as drift.
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[]?.clientConfig.caBundle
+    - group: admissionregistration.k8s.io
+      kind: MutatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[]?.clientConfig.caBundle
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jqPathExpressions:
+        - .spec.conversion.webhook.clientConfig.caBundle
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true # CRDs too large for client-side apply
+      - RespectIgnoreDifferences=true
+    retry:
+      limit: -1 # keep retrying: other units (or clusters) may still be converging
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

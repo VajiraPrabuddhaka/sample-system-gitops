@@ -1,0 +1,32 @@
+# Trust relay, control-plane side (1/2): publish the cluster-gateway CA (public cert
+# only) to the secret store so every plane, in this or any other cluster, can trust
+# the gateway. cert-manager creates and renews the cluster-gateway-ca Secret; this
+# PushSecret re-publishes it whenever it changes.
+#
+# The value is pushed as JSON {"value": "<pem>"} with no remote property so the same
+# manifest works on Vault/OpenBao and on the cloud secret managers alike, and
+# reads back with `property: value` like every other key in the secret store.
+apiVersion: external-secrets.io/v1alpha1
+kind: PushSecret
+metadata:
+  name: cluster-gateway-ca
+  namespace: openchoreo-control-plane
+spec:
+  refreshInterval: 10m
+  updatePolicy: Replace
+  deletionPolicy: None
+  secretStoreRefs:
+    - kind: ClusterSecretStore
+      name: default
+  selector:
+    secret:
+      name: cluster-gateway-ca
+  template:
+    engineVersion: v2
+    data:
+      value: '{{ dict "value" (index . "ca.crt" | toString) | toJson }}'
+  data:
+    - match:
+        secretKey: value
+        remoteRef:
+          remoteKey: openchoreo-trust-gateway-ca

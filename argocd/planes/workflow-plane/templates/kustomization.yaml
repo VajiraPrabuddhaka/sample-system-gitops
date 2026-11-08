@@ -1,0 +1,6 @@
+# argocd/planes/workflow-plane/templates: Argo Workflows ClusterWorkflowTemplates every workflow plane needs (checkout + build).
+# The registry-specific steps (publish-image, generate-workload) come from the cluster.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - application.yaml

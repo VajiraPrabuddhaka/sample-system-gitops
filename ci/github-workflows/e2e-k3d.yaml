@@ -1,0 +1,53 @@
+# End to end on k3d with Flux: create the cluster, install Flux the way a user would, plug
+# this branch in, and wait until every plane's agent has connected and the defaults are
+# applied. Manual trigger; needs a runner with ~16 GB RAM (GitHub's standard Linux runners
+# for public repos qualify).
+#
+# Argo CD: its Applications carry the repo URL in Git (scripts/set-git-source.sh), so run
+# that path from a branch where the URL points at this repository.
+name: e2e-k3d
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+      - uses: azure/setup-kubectl@v4
+      - uses: fluxcd/flux2/action@main
+      - name: Install k3d
+        run: curl -fsSL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.9.0 bash
+      - name: Create cluster
+        run: scripts/k3d-up.sh
+      - name: Install Flux
+        run: flux install
+      - name: Plug this branch in
+        run: |
+          set -euo pipefail
+          # Point the GitRepository at this repository and branch (applied, not committed:
+          # the units only need the source to resolve).
+          sed -e "s|url: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git|url: ${{ github.server_url }}/${{ github.repository }}|" \
+              -e "s|branch: main|branch: ${{ github.ref_name }}|" \
+              flux/clusters/k3d-single/plug.yaml | kubectl apply -f -
+      - name: Wait for every plane to connect, then the defaults
+        run: |
+          for i in $(seq 1 60); do
+            kubectl -n flux-system get kustomization openchoreo-platform-defaults >/dev/null 2>&1 && break
+            sleep 10
+          done
+          for u in data-plane workflow-plane observability-plane; do
+            kubectl -n flux-system wait "kustomization/openchoreo-${u}-registration" --for=condition=Ready --timeout=60m
+          done
+          kubectl -n flux-system wait kustomization/openchoreo-platform-defaults --for=condition=Ready --timeout=10m
+      - name: Verify
+        if: always()
+        run: scripts/verify.sh || true
+      - name: Debug
+        if: failure()
+        run: |
+          kubectl -n flux-system get kustomizations,helmreleases
+          kubectl get pushsecrets,externalsecrets -A
+          kubectl get pods -A | grep -v -E 'Running|Completed'

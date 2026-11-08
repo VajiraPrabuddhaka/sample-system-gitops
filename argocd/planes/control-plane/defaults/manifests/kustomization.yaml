@@ -1,0 +1,5 @@
+# planes/control-plane/defaults: the default namespace, labelled for the control plane.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - default-namespace.yaml

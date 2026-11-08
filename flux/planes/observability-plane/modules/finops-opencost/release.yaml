@@ -1,0 +1,47 @@
+# Flux: observability module finops-opencost.
+# Values: values.yaml next to this file (ConfigMap obs-finops-opencost-values-base), then the
+# optional per-cluster ConfigMap obs-finops-opencost-values (flux/clusters/<name>/values/obs-finops-opencost.yaml).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: obs-finops-opencost
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: oci://ghcr.io/openchoreo/helm-charts/finops-opencost
+  ref:
+    tag: "0.3.0" # version: obs-finops-opencost
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: obs-finops-opencost
+  namespace: flux-system
+spec:
+  releaseName: finops-opencost
+  targetNamespace: openchoreo-observability-plane
+  storageNamespace: openchoreo-observability-plane
+  interval: 30m
+  timeout: 5m
+  chartRef:
+    kind: OCIRepository
+    name: obs-finops-opencost
+  install:
+    createNamespace: true
+    crds: Create
+    remediation:
+      retries: -1 # keep retrying: other units (or clusters) may still be converging
+  upgrade:
+    crds: Create
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: obs-finops-opencost-values-base
+    - kind: ConfigMap
+      name: obs-finops-opencost-values # per-cluster values, optional
+      optional: true

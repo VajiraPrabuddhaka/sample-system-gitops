@@ -1,0 +1,47 @@
+# Flux: cert-manager, which issues the certificates the OpenChoreo charts create.
+# Values: values.yaml next to this file (ConfigMap cert-manager-values-base), then the
+# optional per-cluster ConfigMap cert-manager-values (flux/clusters/<name>/values/cert-manager.yaml).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: cert-manager
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: oci://quay.io/jetstack/charts/cert-manager
+  ref:
+    tag: "v1.19.4" # version: cert-manager
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cert-manager
+  namespace: flux-system
+spec:
+  releaseName: cert-manager
+  targetNamespace: cert-manager
+  storageNamespace: cert-manager
+  interval: 30m
+  timeout: 5m
+  chartRef:
+    kind: OCIRepository
+    name: cert-manager
+  install:
+    createNamespace: true
+    crds: Create
+    remediation:
+      retries: -1 # keep retrying: other units (or clusters) may still be converging
+  upgrade:
+    crds: Create
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: cert-manager-values-base
+    - kind: ConfigMap
+      name: cert-manager-values # per-cluster values, optional
+      optional: true

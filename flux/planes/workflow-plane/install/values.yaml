@@ -1,0 +1,3 @@
+# OpenChoreo workflow plane: values every cluster that runs one gets.
+clusterAgent:
+  planeID: default

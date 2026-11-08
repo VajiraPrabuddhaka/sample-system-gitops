@@ -1,0 +1,25 @@
+# Optional: only for `occ remote` (openchoreoApi.config.remoteConnect.enabled=true).
+#
+# The chart generates this key with Helm `lookup`. Flux's helm-controller supports
+# lookup, so Flux users can keep the default. Argo CD renders with `helm template`
+# (no lookup), which would regenerate the key on every sync, so under Argo CD:
+#   1. seed `openchoreo-remote-connect-signing-key` (Ed25519, PKCS#8 PEM):
+#        openssl genpkey -algorithm ed25519
+#   2. add a source with path argocd/planes/control-plane/install/optional to the
+#      openchoreo-control-plane Application (a patch in your cluster's kustomization.yaml)
+#   3. set openchoreoApi.config.remoteConnect.generateSigningKey: false
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: remote-connect-signing-key
+  namespace: openchoreo-control-plane
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: default
+  target:
+    name: remote-connect-signing-key
+  data:
+    - secretKey: signing.pem
+      remoteRef: { key: openchoreo-remote-connect-signing-key, property: value }

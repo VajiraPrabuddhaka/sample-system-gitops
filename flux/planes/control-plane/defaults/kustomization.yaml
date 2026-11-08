@@ -1,0 +1,8 @@
+# flux/planes/control-plane/defaults: OpenChoreo's default environments, pipeline and
+# component types (upstream, pinned tag). Optional.
+# One Flux Kustomization applies this directory (flux/clusters/<name>/units.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - manifests
+  - source.yaml

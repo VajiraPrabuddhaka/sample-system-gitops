@@ -1,0 +1,48 @@
+# Flux: ThunderID, the default identity provider. Leave this unit out if you
+# bring your own IdP (then set security.oidc.* in the plane values).
+# Values: values.yaml next to this file (ConfigMap thunder-values-base), then the
+# optional per-cluster ConfigMap thunder-values (flux/clusters/<name>/values/thunder.yaml).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: thunder
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: oci://ghcr.io/thunder-id/helm-charts/thunderid
+  ref:
+    tag: "1.0.1" # version: thunder
+  layerSelector:
+    mediaType: application/vnd.cncf.helm.chart.content.v1.tar+gzip
+    operation: copy
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: thunder
+  namespace: flux-system
+spec:
+  releaseName: thunder
+  targetNamespace: thunder
+  storageNamespace: thunder
+  interval: 30m
+  timeout: 10m
+  chartRef:
+    kind: OCIRepository
+    name: thunder
+  install:
+    createNamespace: true
+    crds: Create
+    remediation:
+      retries: -1 # keep retrying: other units (or clusters) may still be converging
+  upgrade:
+    crds: Create
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: thunder-values-base
+    - kind: ConfigMap
+      name: thunder-values # per-cluster values, optional
+      optional: true

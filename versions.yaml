@@ -1,0 +1,29 @@
+# Every version this repo pins, in one place. Each use site carries a
+# `# version: <component>` marker; `scripts/versions.py check` (CI) fails when one
+# disagrees with this file. Upgrade = edit here, `scripts/versions.py apply`, open a PR.
+openchoreo: "1.4.0-m.1"
+charts:
+  cert-manager: "v1.19.4"
+  external-secrets: "2.0.1"
+  kgateway-crds: "v2.3.11"
+  kgateway: "v2.3.11"
+  openbao: "0.25.6"
+  thunder: "1.0.1"
+  control-plane: "1.4.0-m.1"
+  data-plane: "1.4.0-m.1"
+  registry: "3.0.0"
+  workflow-plane: "1.4.0-m.1"
+  observability-plane: "1.4.0-m.1"
+  obs-logs-opensearch: "0.8.1"
+  obs-metrics-prometheus: "0.9.0"
+  obs-finops-opencost: "0.3.0"
+  obs-traces-opensearch: "0.9.0"
+  obs-events-otel-collector: "0.2.1"
+sources:
+  gateway-api-crds: "v1.5.1"
+  platform-defaults: "v1.4.0-m.1" # openchoreo/openchoreo samples/getting-started
+# The engines themselves are installed from their own guides, not from this repo. These
+# are the minimum versions the manifests here need (not pins; nothing checks them).
+requirements:
+  flux: ">= 2.5"    # healthCheckExprs (registration units), reconcile.fluxcd.io/watch label
+  argo-cd: "3.x"    # multi-source Applications with kustomize.patches; argocd/argocd-cm-patch.yaml

@@ -1,0 +1,11 @@
+# The default resources live in the "default" namespace, which the control plane
+# only manages once it carries this label. Never prune or delete it.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: default
+  labels:
+    openchoreo.dev/control-plane: "true"
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false

@@ -1,0 +1,10 @@
+# argocd/planes/observability-plane/modules: one Application per module.
+# Drop a line to skip a module (traces and events need logs: they reuse its OpenSearch).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - logs-opensearch
+  - traces-opensearch
+  - metrics-prometheus
+  - events-otel-collector
+  - finops-opencost
