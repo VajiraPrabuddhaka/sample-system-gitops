@@ -1,5 +1,6 @@
-# Argo CD: ClusterSecretStore "default" backed by the in-cluster OpenBao. Every OpenChoreo
-# unit reads secrets through a store with this name (keys: `scripts/seed-secrets.sh list`).
+# Argo CD: ClusterSecretStores "default" (secrets the units read; keys:
+# `scripts/seed-secrets.sh list`) and "trust" (CA certificates for the trust relay), both
+# backed by the in-cluster OpenBao.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

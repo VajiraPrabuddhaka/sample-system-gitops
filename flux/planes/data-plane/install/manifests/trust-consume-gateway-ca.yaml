@@ -1,6 +1,8 @@
 # Trust relay, plane side (1/2): pull the cluster-gateway CA published by the control
 # plane into the ConfigMap the cluster-agent mounts (clusterAgent.tls.serverCAConfigMap).
 # Targets a ConfigMap, so ESO needs genericTargets.enabled (shared/external-secrets/values.yaml).
+# Store: ClusterSecretStore "trust", the one store every cluster of the installation
+# shares. Only public CA certificates go through it; everything else uses "default".
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
@@ -10,7 +12,7 @@ spec:
   refreshInterval: 10m
   secretStoreRef:
     kind: ClusterSecretStore
-    name: default
+    name: trust
   target:
     name: cluster-gateway-ca
     manifest:

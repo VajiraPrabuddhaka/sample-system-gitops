@@ -1,11 +1,13 @@
 # Trust relay, control-plane side (1/2): publish the cluster-gateway CA (public cert
-# only) to the secret store so every plane, in this or any other cluster, can trust
+# only) to the trust store so every plane, in this or any other cluster, can trust
 # the gateway. cert-manager creates and renews the cluster-gateway-ca Secret; this
 # PushSecret re-publishes it whenever it changes.
 #
 # The value is pushed as JSON {"value": "<pem>"} with no remote property so the same
 # manifest works on Vault/OpenBao and on the cloud secret managers alike, and
-# reads back with `property: value` like every other key in the secret store.
+# reads back with `property: value` like every other key in the secret stores.
+# Store: ClusterSecretStore "trust", the one store every cluster of the installation
+# shares. Only public CA certificates go through it; everything else uses "default".
 apiVersion: external-secrets.io/v1alpha1
 kind: PushSecret
 metadata:
@@ -17,7 +19,7 @@ spec:
   deletionPolicy: None
   secretStoreRefs:
     - kind: ClusterSecretStore
-      name: default
+      name: trust
   selector:
     secret:
       name: cluster-gateway-ca

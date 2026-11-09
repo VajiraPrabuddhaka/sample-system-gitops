@@ -2,6 +2,8 @@
 # into a Secret the cluster-gateway reads when the agent connects
 # (clientCA.secretKeyRef). The gateway re-reads it on every connection, so a renewed
 # agent certificate is picked up without restarts.
+# Store: ClusterSecretStore "trust", the one store every cluster of the installation
+# shares. Only public CA certificates go through it; everything else uses "default".
 apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
@@ -11,7 +13,7 @@ spec:
   refreshInterval: 10m
   secretStoreRef:
     kind: ClusterSecretStore
-    name: default
+    name: trust
   target:
     name: agent-ca-dataplane-default
   data:

@@ -3,6 +3,8 @@
 # self-signed and rotates its key on renewal; re-publishing keeps the control plane's
 # copy current. The remote key encodes <planeType>-<planeID>: if you change
 # clusterAgent.planeID, patch remoteKey (and the matching registration) too.
+# Store: ClusterSecretStore "trust", the one store every cluster of the installation
+# shares. Only public CA certificates go through it; everything else uses "default".
 apiVersion: external-secrets.io/v1alpha1
 kind: PushSecret
 metadata:
@@ -14,7 +16,7 @@ spec:
   deletionPolicy: None
   secretStoreRefs:
     - kind: ClusterSecretStore
-      name: default
+      name: trust
   selector:
     secret:
       name: cluster-agent-tls
