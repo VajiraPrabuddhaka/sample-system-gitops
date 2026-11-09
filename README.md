@@ -73,6 +73,8 @@ Then open http://openchoreo.localhost:8080 and log in as `admin@openchoreo.dev` 
 
 ## Quick start: k3d + Argo CD
 
+Needs Docker with about 8 GB of RAM, `k3d` and `kubectl`.
+
 ```bash
 # 0. Until this repo has a permanent home: fork it, point it at your fork, push.
 #    Every Argo CD Application names the repo, so this commit is required.
@@ -82,7 +84,12 @@ git commit -am "Point at my fork" && git push
 # 1. A local cluster (same definition as OpenChoreo's k3d guide).
 scripts/k3d-up.sh
 
-# 2. Argo CD 3.x, from its own guide: https://argo-cd.readthedocs.io/en/stable/getting_started/
+# 2. Argo CD 3.x, installed as its own guide does it
+#    (https://argo-cd.readthedocs.io/en/stable/getting_started/):
+kubectl create namespace argocd
+kubectl apply -n argocd --server-side --force-conflicts \
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl -n argocd wait --for=condition=Available deployment --all --timeout=300s
 #    Then the health checks this repo relies on (the one change to a stock install):
 kubectl -n argocd patch configmap argocd-cm --patch-file argocd/argocd-cm-patch.yaml
 
