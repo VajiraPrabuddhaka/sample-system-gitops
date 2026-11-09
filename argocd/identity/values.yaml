@@ -7,19 +7,25 @@
 # wave per weight, and waits for each wave to be Healthy before the next. A PVC on a
 # WaitForFirstConsumer storage class (k3s local-path, most cloud defaults) stays Pending
 # until a pod uses it, so the sync would wait forever before ever starting the setup Job.
-# Putting the PVCs in the Job's wave lets the Job's pod bind them. Helm (Flux) ignores
-# the annotation.
+# Putting the PVCs in the Job's wave lets the Job's pod bind them.
+# Argo CD also runs pre-install hooks on every sync, deleting and re-creating them first
+# by default: for the PVCs that would wipe ThunderID's data and block while its pod still
+# uses them. The HookFailed delete policy keeps them across syncs. Helm (Flux) ignores
+# both annotations.
 persistence:
   annotations:
     argocd.argoproj.io/sync-wave: "-5"
+    argocd.argoproj.io/hook-delete-policy: HookFailed
 certs:
   persistence:
     annotations:
       argocd.argoproj.io/sync-wave: "-5"
+      argocd.argoproj.io/hook-delete-policy: HookFailed
 secrets:
   persistence:
     annotations:
       argocd.argoproj.io/sync-wave: "-5"
+      argocd.argoproj.io/hook-delete-policy: HookFailed
 
 # Argo CD: the HTTPRoute attaches to the control plane's Gateway (values/thunder.yaml),
 # which the control plane unit creates later. Argo CD reports an HTTPRoute Progressing
