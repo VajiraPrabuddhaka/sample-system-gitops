@@ -74,14 +74,19 @@ Then open http://openchoreo.localhost:8080 and log in as `admin@openchoreo.dev` 
 ## Quick start: k3d + Argo CD
 
 ```bash
-# 0. As above: scripts/set-git-source.sh <your fork> <branch>, commit, push.
+# 0. Until this repo has a permanent home: fork it, point it at your fork, push.
+#    Every Argo CD Application names the repo, so this commit is required.
+scripts/set-git-source.sh https://github.com/<you>/sample-system-gitops.git main
+git commit -am "Point at my fork" && git push
+
+# 1. A local cluster (same definition as OpenChoreo's k3d guide).
 scripts/k3d-up.sh
 
-# 1. Argo CD 3.x, from its own guide: https://argo-cd.readthedocs.io/en/stable/getting_started/
+# 2. Argo CD 3.x, from its own guide: https://argo-cd.readthedocs.io/en/stable/getting_started/
 #    Then the health checks this repo relies on (the one change to a stock install):
 kubectl -n argocd patch configmap argocd-cm --patch-file argocd/argocd-cm-patch.yaml
 
-# 2. Plug this repo in.
+# 3. Plug this repo in.
 kubectl apply -f argocd/clusters/k3d-single/root-app.yaml
 kubectl -n argocd get applications -w            # openchoreo-* apps sync wave by wave
 scripts/verify.sh
@@ -106,7 +111,10 @@ the trust relay's CA certificates go through it. Agents, collectors and stores r
 other clusters through the host (`host.k3d.internal` and the ports k3d maps).
 
 ```bash
-# As above first: scripts/set-git-source.sh <your fork> <branch>, commit, push.
+# Point the repo at your fork and push, as in the quick starts above.
+scripts/set-git-source.sh https://github.com/<you>/sample-system-gitops.git main
+git commit -am "Point at my fork" && git push
+
 scripts/k3d-up.sh multi          # four clusters; warns if Docker's inotify limits are too low
 for c in cp:control-plane dp:data-plane wp:workflow-plane op:observability-plane; do
   flux install --context "k3d-openchoreo-${c%%:*}"
