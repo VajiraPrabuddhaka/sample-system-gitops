@@ -1,0 +1,8 @@
+# Ship this cluster's logs to the observability plane's OpenSearch: through the host to
+# the observability cluster's TLS passthrough listener (11085), by SNI.
+fluentBitCustomizations:
+  clusterInstance: openchoreo-dp
+fluent-bit:
+  openSearchHost: host.k3d.internal
+  openSearchPort: 11085
+  openSearchVHost: opensearch.observability.openchoreo.localhost

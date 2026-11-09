@@ -1,0 +1,8 @@
+# Receive the traces the other clusters' exporters send (collectors/traces-opensearch).
+global:
+  installationMode: multiClusterReceiver
+opentelemetryCollectorCustomizations:
+  http:
+    hostnames:
+      - opentelemetry.observability.openchoreo.localhost
+      - host.k3d.internal

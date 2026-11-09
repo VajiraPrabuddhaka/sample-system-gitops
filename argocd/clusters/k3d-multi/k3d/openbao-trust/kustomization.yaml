@@ -1,0 +1,6 @@
+# argocd/clusters/k3d-multi/k3d/openbao-trust: the shared trust OpenBao (k3d only, control-plane cluster).
+# The cluster's root app applies application.yaml; values.yaml is read by the Application from Git.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - application.yaml

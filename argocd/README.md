@@ -18,6 +18,11 @@ Everything here is for Argo CD. `../flux` is the same thing for Flux; you only n
    which creates one Application per unit.
 4. Watch: `kubectl -n argocd get applications -w`.
 
+One cluster per plane (`clusters/k3d-multi`): do steps 1 and 2 on each of the four
+clusters, then apply that cluster's `clusters/k3d-multi/<plane>/root-app.yaml` with its
+context (see the k3d-multi section of the top-level README). Each cluster's Argo CD
+manages only its own cluster.
+
 Every Application names this repo, so on a fork or mirror run
 `scripts/set-git-source.sh <url> [branch]` and push before step 3.
 

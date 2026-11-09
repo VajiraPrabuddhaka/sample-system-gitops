@@ -1,0 +1,219 @@
+# k3d-multi, control-plane cluster (openchoreo-cp): the control plane, ThunderID, the shared trust OpenBao
+# and every plane registration.
+# One Flux Kustomization per unit, ordered with dependsOn inside this cluster. Clusters
+# never wait on each other: units that need another cluster stay not-ready (and retry)
+# until it has done its part. Fields every unit shares (sourceRef, interval, prune, wait)
+# are set once in kustomization.yaml.
+---
+# shared: what every cluster that runs a plane needs
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-gateway-api-crds
+  namespace: flux-system
+spec:
+  path: ./flux/shared/gateway-api-crds
+  timeout: 5m
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-cert-manager
+  namespace: flux-system
+spec:
+  path: ./flux/shared/cert-manager
+  timeout: 10m
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-external-secrets
+  namespace: flux-system
+spec:
+  path: ./flux/shared/external-secrets
+  timeout: 10m
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-kgateway
+  namespace: flux-system
+spec:
+  path: ./flux/shared/kgateway
+  timeout: 10m
+  dependsOn:
+    - name: openchoreo-gateway-api-crds
+---
+# k3d: this cluster's own OpenBao behind ClusterSecretStore "default", the shared
+# trust OpenBao behind "trust", and DNS. On other clusters, replace them with your
+# own stores ("default": keys from `scripts/seed-secrets.sh list`; "trust": shared).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-openbao
+  namespace: flux-system
+spec:
+  path: ./flux/clusters/k3d-multi/k3d/openbao
+  timeout: 10m
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-secret-store
+  namespace: flux-system
+spec:
+  path: ./flux/clusters/k3d-multi/k3d/secret-store
+  timeout: 5m
+  dependsOn:
+    - name: openchoreo-external-secrets
+    - name: openchoreo-openbao
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-openbao-trust
+  namespace: flux-system
+spec:
+  path: ./flux/clusters/k3d-multi/k3d/openbao-trust
+  timeout: 10m
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-trust-store
+  namespace: flux-system
+spec:
+  path: ./flux/clusters/k3d-multi/k3d/trust-store
+  timeout: 10m
+  dependsOn:
+    - name: openchoreo-external-secrets
+    - name: openchoreo-openbao-trust
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-coredns
+  namespace: flux-system
+spec:
+  path: ./flux/clusters/k3d-multi/k3d/coredns
+  timeout: 5m
+---
+# identity: ThunderID. Drop it if you bring your own IdP (set security.oidc.* in
+# values/control-plane.yaml and the observability cluster's values).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-identity
+  namespace: flux-system
+spec:
+  path: ./flux/identity
+  timeout: 10m
+  dependsOn:
+    - name: openchoreo-gateway-api-crds
+---
+# control plane
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-control-plane
+  namespace: flux-system
+spec:
+  path: ./flux/planes/control-plane/install
+  timeout: 20m
+  dependsOn:
+    - name: openchoreo-cert-manager
+    - name: openchoreo-external-secrets
+    - name: openchoreo-kgateway
+    - name: openchoreo-secret-store
+    - name: openchoreo-trust-store
+    - name: openchoreo-coredns
+    - name: openchoreo-identity
+---
+# registration of the planes on the other clusters. Ready only when that plane's
+# agent is connected through the trust relay (healthCheckExprs needs Flux >= 2.5).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-data-plane-registration
+  namespace: flux-system
+spec:
+  path: ./flux/planes/data-plane/registration
+  timeout: 15m
+  dependsOn:
+    - name: openchoreo-control-plane
+  healthCheckExprs:
+    - apiVersion: openchoreo.dev/v1alpha1
+      kind: ClusterDataPlane
+      current: has(status.agentConnection) && status.agentConnection.connected == true
+  patches:
+    # Where the data plane serves workloads (k3d load balancer on openchoreo-dp, port 19080).
+    - target:
+        kind: ClusterDataPlane
+        name: default
+      patch: |-
+        apiVersion: openchoreo.dev/v1alpha1
+        kind: ClusterDataPlane
+        metadata:
+          name: default
+        spec:
+          gateway:
+            ingress:
+              external:
+                http:
+                  host: openchoreoapis.localhost
+                  port: 19080
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-workflow-plane-registration
+  namespace: flux-system
+spec:
+  path: ./flux/planes/workflow-plane/registration
+  timeout: 15m
+  dependsOn:
+    - name: openchoreo-control-plane
+  healthCheckExprs:
+    - apiVersion: openchoreo.dev/v1alpha1
+      kind: ClusterWorkflowPlane
+      current: has(status.agentConnection) && status.agentConnection.connected == true
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-observability-plane-registration
+  namespace: flux-system
+spec:
+  path: ./flux/planes/observability-plane/registration
+  timeout: 15m
+  dependsOn:
+    - name: openchoreo-control-plane
+  healthCheckExprs:
+    - apiVersion: openchoreo.dev/v1alpha1
+      kind: ClusterObservabilityPlane
+      current: has(status.agentConnection) && status.agentConnection.connected == true
+  patches:
+    - target:
+        kind: ClusterObservabilityPlane
+        name: default
+      patch: |-
+        apiVersion: openchoreo.dev/v1alpha1
+        kind: ClusterObservabilityPlane
+        metadata:
+          name: default
+        spec:
+          observerURL: http://observer.openchoreo.localhost:11080
+---
+# defaults: OpenChoreo's default environments, pipeline and component types (optional).
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo-platform-defaults
+  namespace: flux-system
+spec:
+  path: ./flux/planes/control-plane/defaults
+  timeout: 10m
+  dependsOn:
+    - name: openchoreo-data-plane-registration
+    - name: openchoreo-workflow-plane-registration
+    - name: openchoreo-observability-plane-registration

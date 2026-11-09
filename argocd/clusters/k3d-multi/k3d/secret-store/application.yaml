@@ -1,0 +1,33 @@
+# Argo CD: ClusterSecretStore "default", backed by this cluster's own OpenBao
+# (k3d/openbao): the secrets this cluster's units read (keys: `scripts/seed-secrets.sh list`)
+# and the ones OpenChoreo writes for workloads and builds here.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openchoreo-secret-store
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "20"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  sources:
+    - repoURL: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git
+      targetRevision: main
+      path: argocd/clusters/k3d-multi/k3d/secret-store/manifests
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: -1 # keep retrying: other units (or clusters) may still be converging
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

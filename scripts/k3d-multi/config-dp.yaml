@@ -1,0 +1,49 @@
+# k3d cluster definition for k3d-multi's data-plane cluster (scripts/k3d-up.sh multi).
+# Verbatim copy of
+# openchoreo/openchoreo@v1.4.0-m.1:install/k3d/multi-cluster/config-dp.yaml
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: openchoreo-dp
+image: rancher/k3s:v1.36.1-k3s1
+servers: 1
+agents: 0
+kubeAPI:
+  hostPort: "6551"
+# Data Plane uses port range 19xxx
+ports:
+  # HTTP traffic to workloads via Gateway
+  - port: 19080:19080
+    nodeFilters:
+      - loadbalancer
+  # HTTPS traffic to workloads via Gateway
+  - port: 19443:19443
+    nodeFilters:
+      - loadbalancer
+  # `occ remote` SNI router. Needs remoteAgentRouter.service type NodePort with this
+  # nodePort, and a matching remoteConnect.entrypointAddress on the control plane.
+  # Multi-cluster also needs remoteConnect.authorizeUrl overridden (see values-cp.yaml).
+  - port: 30443:30443
+    nodeFilters:
+      - loadbalancer
+options:
+  k3s:
+    extraArgs:
+      # Add host.k3d.internal to API server TLS certificate SANs.
+      # This allows Control Plane pods to securely access the Data Plane API server
+      # via host.k3d.internal:6551 without TLS certificate verification errors.
+      - arg: "--tls-san=host.k3d.internal"
+        nodeFilters:
+          - server:*
+      # Disable Traefik ingress controller (use kgateway instead)
+      - arg: "--disable=traefik"
+        nodeFilters:
+          - server:*
+# Configure insecure registries for HTTP access
+# Allows kubelet to pull images from Workflow Plane registry via HTTP
+registries:
+  config: |
+    mirrors:
+      "host.k3d.internal:10082":
+        endpoint:
+          - http://host.k3d.internal:10082

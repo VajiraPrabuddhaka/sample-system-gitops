@@ -1,0 +1,7 @@
+# clusters/k3d-multi/k3d/trust-store: ClusterSecretStore "trust" -> the shared OpenBao on
+# the control-plane cluster (k3d only). The same on all four clusters.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - token.yaml
+  - trust-secret-store.yaml

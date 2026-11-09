@@ -1,0 +1,10 @@
+# k3d-multi, data-plane cluster (openchoreo-dp): plain HTTP on the ports k3d maps to the
+# host (19080/19443); the agent dials the control plane's cluster-gateway through the host.
+# Derived from openchoreo/openchoreo@v1.4.0-m.1:install/k3d/multi-cluster/values-dp.yaml
+clusterAgent:
+  serverUrl: wss://cluster-gateway.openchoreo.localhost:8443/ws # via the host, TLS passthrough
+gateway:
+  httpPort: 19080
+  httpsPort: 19443
+  tls:
+    enabled: false

@@ -1,0 +1,12 @@
+# k3d-multi, workflow-plane cluster (openchoreo-wp): the Argo Workflows UI on the host at
+# http://localhost:10081; the agent dials the control plane's cluster-gateway through the host.
+# Derived from openchoreo/openchoreo@v1.4.0-m.1:install/k3d/multi-cluster/values-wp.yaml
+clusterAgent:
+  serverUrl: wss://cluster-gateway.openchoreo.localhost:8443/ws # via the host, TLS passthrough
+argo-workflows:
+  server:
+    enabled: true
+    serviceType: LoadBalancer
+    servicePort: 10081
+    authModes:
+      - server

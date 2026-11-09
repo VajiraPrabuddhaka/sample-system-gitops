@@ -1,0 +1,4 @@
+# Name this cluster in the logs its own Fluent Bit ships. The other clusters' Fluent Bit
+# and events collectors reach this OpenSearch through k3d/opensearch-route.
+fluentBitCustomizations:
+  clusterInstance: openchoreo-op

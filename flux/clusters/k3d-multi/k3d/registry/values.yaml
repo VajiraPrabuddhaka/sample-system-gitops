@@ -1,0 +1,8 @@
+# In-cluster image registry for k3d builds (twuni/docker-registry), exposed on the
+# host as host.k3d.internal:10082 (see scripts/k3d-multi/config-wp.yaml).
+fullnameOverride: registry
+persistence:
+  enabled: true
+service:
+  type: LoadBalancer
+  port: 10082

@@ -7,14 +7,15 @@
 #      units, and every path, dependsOn and patch target a cluster uses exists
 #   3. every pinned version matches versions.yaml, in both trees
 #   4. (kubeconform) schema-validates the rendered manifests, CRDs included
-#   5. (helm + PyYAML) renders each OpenChoreo chart with every cluster's merged values,
-#      so a typo in values fails here instead of in the cluster
+#   5. (helm + PyYAML) renders, for every cluster, each OpenChoreo plane chart it installs
+#      and each observability module or collector it gives values to, with the merged
+#      values, so a typo in values fails here instead of in the cluster
 #   6. lists REPLACE_ME placeholders (the Git source until the repo has a home)
 #
 # Usage: scripts/validate.sh [--strict] [--charts-dir DIR]
 #   --strict       fail on placeholders too
-#   --charts-dir   use local charts (e.g. an openchoreo checkout's install/helm) instead of
-#                  pulling the pinned versions from cr.openchoreo.dev
+#   --charts-dir   use local OpenChoreo plane charts (e.g. an openchoreo checkout's
+#                  install/helm) instead of pulling the pinned versions from cr.openchoreo.dev
 source "$(dirname "$0")/lib.sh"
 need python3
 command -v kustomize >/dev/null 2>&1 || need kubectl
@@ -23,7 +24,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --strict) strict=true; shift ;;
     --charts-dir) charts_dir="$2"; shift 2 ;;
-    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,19p' "$0"; exit 0 ;;
     *) die "unknown option: $1" ;;
   esac
 done
@@ -65,22 +66,40 @@ else
 fi
 
 log "5/6 helm template OpenChoreo charts with merged values"
+# chart_of <component>: "<chart> <versions.yaml key>" for the charts rendered here.
+chart_of() {
+  case "$1" in
+    control-plane|data-plane|workflow-plane|observability-plane) echo "openchoreo-$1 $1" ;;
+    obs-logs-opensearch|collector-logs-opensearch) echo "observability-logs-opensearch obs-logs-opensearch" ;;
+    obs-traces-opensearch|collector-traces-opensearch) echo "observability-tracing-opensearch obs-traces-opensearch" ;;
+    obs-metrics-prometheus|collector-metrics-prometheus) echo "observability-metrics-prometheus obs-metrics-prometheus" ;;
+    obs-events-otel-collector|collector-events-otel-collector) echo "observability-events-otel-collector obs-events-otel-collector" ;;
+  esac
+}
 if command -v helm >/dev/null 2>&1 && has_yaml; then
-  for cl in flux/clusters/*/; do
-    cl="$(basename "$cl")"
+  while IFS= read -r units; do
+    cdir="$(dirname "$units")"; cl="${cdir#flux/clusters/}"
+    comps=()
     for comp in control-plane data-plane workflow-plane observability-plane; do
-      grep -q "path: ./flux/planes/${comp}/install$" "flux/clusters/$cl/units.yaml" || continue
-      python3 scripts/render-values.py "$cl" "$comp" > "$tmp/values-$cl-$comp.yaml"
-      chart="openchoreo-$comp"
-      if [[ -n "$charts_dir" ]]; then src=("$charts_dir/$chart")
-      else src=("oci://cr.openchoreo.dev/openchoreo/helm-charts/$chart" --version "$(version_of "$comp")"); fi
-      if helm template "$chart" "${src[@]}" -f "$tmp/values-$cl-$comp.yaml" > /dev/null 2> "$tmp/err"; then
+      grep -q "path: ./flux/planes/${comp}/install$" "$units" && comps+=("$comp")
+    done
+    for f in "$cdir"/values/*.yaml; do
+      comp="$(basename "$f" .yaml)"
+      case "$comp" in obs-*|collector-*) [[ -n "$(chart_of "$comp")" ]] && comps+=("$comp") ;; esac
+    done
+    for comp in "${comps[@]}"; do
+      read -r chart vkey <<< "$(chart_of "$comp")"
+      out="$tmp/values-$(echo "$cl" | tr '/' '_')-$comp.yaml"
+      python3 scripts/render-values.py "$cl" "$comp" > "$out"
+      if [[ -n "$charts_dir" && "$chart" == openchoreo-* ]]; then src=("$charts_dir/$chart")
+      else src=("oci://cr.openchoreo.dev/openchoreo/helm-charts/$chart" --version "$(version_of "$vkey")"); fi
+      if helm template "$chart" "${src[@]}" -f "$out" > /dev/null 2> "$tmp/err"; then
         info "ok   $cl/$comp"
       else
         warn "$cl/$comp:"; cat "$tmp/err" >&2; fail=1
       fi
     done
-  done
+  done < <(find flux/clusters -name units.yaml | sort)
 else
   info "skipped (needs helm and PyYAML)"
 fi

@@ -1,0 +1,37 @@
+# The shared "trust" OpenBao of the k3d-multi example: one dev-mode instance on the
+# control-plane cluster. Every cluster's ClusterSecretStore "trust" (k3d/trust-store)
+# points at it through the host (host.k3d.internal:8200; scripts/k3d-up.sh multi maps
+# port 8200 on the control-plane cluster). Only the trust relay's public CA certificates
+# (openchoreo-trust-*) go through it; each cluster keeps its other secrets in its own
+# OpenBao (k3d/openbao).
+#
+# In memory and dev only. The postStart hook creates the token the stores log in with:
+# a fixed ID, allowed only the openchoreo-trust-* keys. A restarted pod comes back
+# empty and the PushSecrets re-publish within their refreshInterval (10m).
+injector:
+  enabled: false
+
+server:
+  dev:
+    enabled: true
+    devRootToken: root
+
+  service:
+    type: LoadBalancer # k3s servicelb on port 8200, which k3d maps to the host
+
+  postStart:
+    - /bin/sh
+    - -c
+    - |
+      sleep 5
+      export BAO_ADDR=http://127.0.0.1:8200
+      export BAO_TOKEN=root
+
+      bao policy write openchoreo-trust - <<POLICY
+      path "secret/data/openchoreo-trust-*" { capabilities = ["create", "read", "update", "delete"] }
+      path "secret/metadata/openchoreo-trust-*" { capabilities = ["create", "read", "update", "delete", "list"] }
+      POLICY
+
+      bao auth tune -max-lease-ttl=87600h token/
+      bao token create -id=openchoreo-trust-dev-token -policy=openchoreo-trust \
+        -orphan -ttl=87600h >/dev/null

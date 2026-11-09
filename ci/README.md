@@ -13,3 +13,5 @@ rm -r ci
 - `validate.yaml`: static checks on every PR (`scripts/validate.sh`).
 - `e2e-k3d.yaml`: manual end-to-end run on k3d: installs Flux, applies
   `flux/clusters/k3d-single/plug.yaml` for the branch, waits for every registration.
+  `k3d-multi` gets the static checks only: four clusters with observability don't fit a
+  hosted runner.

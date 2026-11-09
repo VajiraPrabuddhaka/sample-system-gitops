@@ -1,0 +1,47 @@
+# Argo CD entry point for k3d-multi's workflow-plane cluster (openchoreo-wp):
+# the workflow plane, its build templates and the
+# k3d registry, plus collectors shipping its logs and events to the observability plane.
+# root-app.yaml points this cluster's Argo CD at this directory. It lists the units this
+# cluster runs (one Application each; order = sync waves) and patches in this cluster's
+# Helm values.
+# Clusters never wait on each other: a unit that needs another cluster stays unhealthy
+# (and retries) until that cluster has done its part.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../../shared/helm-repositories
+  - ../../../shared/cert-manager
+  - ../../../shared/external-secrets
+  - ../k3d/openbao
+  - ../k3d/secret-store
+  - ../k3d/trust-store
+  - ../k3d/coredns
+  - ../../../planes/workflow-plane/install
+  - ../../../planes/workflow-plane/templates
+  - ../k3d/registry
+  - ../k3d/workflow-templates
+  - ../../../planes/observability-plane/collectors/logs-opensearch
+  - ../../../planes/observability-plane/collectors/events-otel-collector
+patches:
+  # Per-cluster Helm values: appended after the unit's own values.yaml (later wins).
+  - target:
+      kind: Application
+      name: openchoreo-workflow-plane
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valueFiles/-
+        value: $values/argocd/clusters/k3d-multi/workflow-plane/values/workflow-plane.yaml
+  - target:
+      kind: Application
+      name: openchoreo-collector-logs-opensearch
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valueFiles/-
+        value: $values/argocd/clusters/k3d-multi/workflow-plane/values/collector-logs-opensearch.yaml
+  - target:
+      kind: Application
+      name: openchoreo-collector-events-otel-collector
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valueFiles/-
+        value: $values/argocd/clusters/k3d-multi/workflow-plane/values/collector-events-otel-collector.yaml

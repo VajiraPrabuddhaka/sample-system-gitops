@@ -2,8 +2,9 @@
 # Re-copy the files this repo vendors from openchoreo/openchoreo at a release tag, keeping
 # each file's header comment. Every vendored file lives in both engine trees (flux/ and
 # argocd/), so each is written twice. Run it when bumping OpenChoreo,
-# then review `git diff`. Files derived by hand (the k3d control/observability plane
-# values) are not touched: compare them with the upstream guides yourself.
+# then review `git diff`. Files derived by hand (the k3d plane values, and k3d-multi's
+# trust OpenBao and OpenSearch route) are not touched: compare them with the upstream
+# guides yourself.
 #
 # Usage: scripts/sync-upstream.sh <tag>      e.g. scripts/sync-upstream.sh v1.4.0
 source "$(dirname "$0")/lib.sh"
@@ -18,7 +19,16 @@ map="@/planes/workflow-plane/templates/manifests/checkout-source.yaml|samples/ge
 @/clusters/k3d-single/k3d/coredns/manifests/coredns-custom.yaml|install/k3d/common/coredns-custom.yaml
 @/clusters/k3d-single/k3d/openbao/values.yaml|install/k3d/common/values-openbao.yaml
 @/clusters/k3d-single/values/thunder.yaml|install/k3d/common/values-thunder.yaml
-scripts/k3d-config.yaml|install/k3d/single-cluster/config.yaml"
+scripts/k3d-config.yaml|install/k3d/single-cluster/config.yaml
+@/clusters/k3d-multi/k3d/workflow-templates/manifests/publish-image-k3d.yaml|samples/getting-started/workflow-templates/publish-image-k3d.yaml
+@/clusters/k3d-multi/k3d/workflow-templates/manifests/generate-workload-k3d.yaml|samples/getting-started/workflow-templates/generate-workload-k3d.yaml
+@/clusters/k3d-multi/k3d/coredns/manifests/coredns-custom.yaml|install/k3d/common/coredns-custom.yaml
+@/clusters/k3d-multi/k3d/openbao/values.yaml|install/k3d/common/values-openbao.yaml
+@/clusters/k3d-multi/control-plane/values/thunder.yaml|install/k3d/common/values-thunder.yaml
+scripts/k3d-multi/config-cp.yaml|install/k3d/multi-cluster/config-cp.yaml
+scripts/k3d-multi/config-dp.yaml|install/k3d/multi-cluster/config-dp.yaml
+scripts/k3d-multi/config-wp.yaml|install/k3d/multi-cluster/config-wp.yaml
+scripts/k3d-multi/config-op.yaml|install/k3d/multi-cluster/config-op.yaml"
 
 src="$(mktemp -d)"; trap 'rm -rf "$src"' EXIT
 log "fetching openchoreo/openchoreo@${tag}"
@@ -59,5 +69,5 @@ while IFS='|' read -r dest up; do
     sync "$dest" "$up"
   fi
 done <<< "$map"
-log "done. Review: git diff -- flux argocd scripts/k3d-config.yaml"
+log "done. Review: git diff -- flux argocd scripts/k3d-config.yaml scripts/k3d-multi"
 info "also bump versions.yaml and run scripts/versions.py apply"

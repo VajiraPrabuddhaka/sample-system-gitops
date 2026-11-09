@@ -1,0 +1,86 @@
+# Argo CD entry point for k3d-multi's control-plane cluster (openchoreo-cp):
+# the control plane, ThunderID, the shared trust OpenBao
+# and every plane registration.
+# root-app.yaml points this cluster's Argo CD at this directory. It lists the units this
+# cluster runs (one Application each; order = sync waves) and patches in this cluster's
+# Helm values and registration details.
+# Clusters never wait on each other: a unit that needs another cluster stays unhealthy
+# (and retries) until that cluster has done its part.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../../shared/helm-repositories
+  - ../../../shared/gateway-api-crds
+  - ../../../shared/cert-manager
+  - ../../../shared/external-secrets
+  - ../../../shared/kgateway
+  - ../k3d/openbao
+  - ../k3d/secret-store
+  - ../k3d/openbao-trust
+  - ../k3d/trust-store
+  - ../k3d/coredns
+  - ../../../identity
+  - ../../../planes/control-plane/install
+  - ../../../planes/data-plane/registration
+  - ../../../planes/workflow-plane/registration
+  - ../../../planes/observability-plane/registration
+  - ../../../planes/control-plane/defaults
+patches:
+  # Per-cluster Helm values: appended after the unit's own values.yaml (later wins).
+  - target:
+      kind: Application
+      name: openchoreo-control-plane
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valueFiles/-
+        value: $values/argocd/clusters/k3d-multi/control-plane/values/control-plane.yaml
+  - target:
+      kind: Application
+      name: openchoreo-thunder
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valueFiles/-
+        value: $values/argocd/clusters/k3d-multi/control-plane/values/thunder.yaml
+  # Registration: where the data plane (openchoreo-dp) serves workloads and where the
+  # observer (openchoreo-op) is reachable (k3d load balancer ports on the host).
+  - target:
+      kind: Application
+      name: openchoreo-data-plane-registration
+    patch: |-
+      - op: add
+        path: /spec/sources/0/kustomize
+        value:
+          patches:
+            - target:
+                kind: ClusterDataPlane
+                name: default
+              patch: |-
+                apiVersion: openchoreo.dev/v1alpha1
+                kind: ClusterDataPlane
+                metadata:
+                  name: default
+                spec:
+                  gateway:
+                    ingress:
+                      external:
+                        http:
+                          host: openchoreoapis.localhost
+                          port: 19080
+  - target:
+      kind: Application
+      name: openchoreo-observability-plane-registration
+    patch: |-
+      - op: add
+        path: /spec/sources/0/kustomize
+        value:
+          patches:
+            - target:
+                kind: ClusterObservabilityPlane
+                name: default
+              patch: |-
+                apiVersion: openchoreo.dev/v1alpha1
+                kind: ClusterObservabilityPlane
+                metadata:
+                  name: default
+                spec:
+                  observerURL: http://observer.openchoreo.localhost:11080

@@ -1,0 +1,8 @@
+# flux/clusters/k3d-multi/k3d/secret-store: ClusterSecretStore "default", backed by this cluster's own OpenBao
+# (k3d/openbao): the secrets this cluster's units read (keys: `scripts/seed-secrets.sh list`)
+# and the ones OpenChoreo writes for workloads and builds here.
+# One Flux Kustomization applies this directory (flux/clusters/<name>/units.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - manifests

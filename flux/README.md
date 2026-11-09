@@ -12,6 +12,10 @@ Everything here is for Flux. `../argocd` is the same thing for Argo CD.
 3. Watch: `kubectl -n flux-system get kustomizations -w`. `openchoreo-*-registration` turn
    Ready when that plane's agent has connected; `openchoreo-platform-defaults` is last.
 
+One cluster per plane (`clusters/k3d-multi`): install Flux on each of the four clusters
+and apply that cluster's `clusters/k3d-multi/<plane>/plug.yaml` with its context (see
+the k3d-multi section of the top-level README).
+
 Forked or mirrored? `scripts/set-git-source.sh <url> [branch]` rewrites `plug.yaml`.
 To track a release tag instead of a branch, change `ref.branch` to `ref.tag` in `plug.yaml`.
 Private repo: add a `secretRef` to the GitRepository (commented in `plug.yaml`).

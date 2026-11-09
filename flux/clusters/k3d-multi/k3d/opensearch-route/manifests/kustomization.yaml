@@ -1,0 +1,5 @@
+# clusters/k3d-multi/k3d/opensearch-route: TLSRoute to OpenSearch (k3d-multi, observability-plane cluster).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - tls-route.yaml

@@ -1,0 +1,5 @@
+# Forward this cluster's traces to the observability plane's gateway (11080), by virtual host.
+opentelemetryCollectorCustomizations:
+  http:
+    observabilityPlaneUrl: http://host.k3d.internal:11080
+    observabilityPlaneVirtualHost: opentelemetry.observability.openchoreo.localhost

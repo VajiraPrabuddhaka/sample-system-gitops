@@ -1,0 +1,54 @@
+# k3d-multi, observability-plane cluster (openchoreo-op): observer, RCA and FinOps agents
+# on *.openchoreo.localhost, plain HTTP on 11080, and a TLS passthrough listener on 11085
+# through which the other clusters reach OpenSearch (k3d/opensearch-route). ThunderID and
+# the API run on the control-plane cluster, reached through the host.
+# Derived from openchoreo/openchoreo@v1.4.0-m.1:install/k3d/multi-cluster/values-op.yaml
+# (observer.secretName lives in the unit's values.yaml).
+clusterAgent:
+  serverUrl: wss://cluster-gateway.openchoreo.localhost:8443/ws # via the host, TLS passthrough
+gateway:
+  httpPort: 11080
+  httpsPort: 11085
+  tls:
+    enabled: false
+  tlsPassthrough:
+    enabled: true
+    hostname: opensearch.observability.openchoreo.localhost
+    port: 11085
+finOpsAgent:
+  openchoreoApiUrl: http://api.openchoreo.localhost:8080
+  cors:
+    allowedOrigins:
+    - http://openchoreo.localhost:8080
+  http:
+    hostnames:
+    - finops-agent.openchoreo.localhost
+observer:
+  controlPlaneApiUrl: http://api.openchoreo.localhost:8080
+  cors:
+    allowedOrigins:
+    - http://openchoreo.localhost:8080
+  extraEnvs:
+  - name: OBSERVER_BASE_URL
+    value: http://observer.openchoreo.localhost:11080
+  - name: AUTHZ_TIMEOUT
+    value: 30s
+  http:
+    hostnames:
+    - host.k3d.internal
+    - observer.openchoreo.localhost
+security:
+  oidc:
+    jwksUrl: http://thunder.openchoreo.localhost:8080/oauth2/jwks
+    tokenUrl: http://thunder.openchoreo.localhost:8080/oauth2/token
+    jwksUrlTlsInsecureSkipVerify: "true"
+    authServerBaseUrl: http://thunder.openchoreo.localhost:8080
+rca:
+  openchoreoApiUrl: http://api.openchoreo.localhost:8080
+  cors:
+    allowedOrigins:
+    - http://openchoreo.localhost:8080
+  http:
+    hostnames:
+    - host.k3d.internal
+    - rca-agent.observability.openchoreo.localhost

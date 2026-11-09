@@ -1,0 +1,8 @@
+# Receive the metrics the other clusters remote-write (collectors/metrics-prometheus).
+global:
+  installationMode: multiClusterReceiver
+prometheusCustomizations:
+  http:
+    hostnames:
+      - prometheus.observability.openchoreo.localhost
+      - host.k3d.internal

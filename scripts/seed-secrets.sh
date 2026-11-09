@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
-# Write the secrets OpenChoreo's system components read into
-# your secret store, once per installation, before (or while) the GitOps engine syncs.
-# This is the one piece of the install that cannot live in Git.
+# Write the secrets OpenChoreo's system components read into the secret store behind a
+# cluster's ClusterSecretStore "default", before (or while) the GitOps engine syncs.
+# This is the one piece of the install that cannot live in Git. Each cluster reads its
+# own "default"; seed each one (with several clusters, give them the same OpenSearch
+# credentials: collectors on other clusters write to the observability plane's
+# OpenSearch with them). The "trust" store needs no seeding.
 #
 # Usage: scripts/seed-secrets.sh <backend> [options]
 #
-# Backends (all clusters of one installation share one store):
+# Backends:
 #   vault     [--mount secret]          HashiCorp Vault / OpenBao (vault or bao CLI, VAULT_ADDR + token set)
-#   openbao   [--context CONTEXT]       the k3d example's dev OpenBao. Rarely needed: its pod seeds
-#                                       itself (clusters/k3d-single/k3d/openbao/values.yaml); use to
-#                                       rotate dev values.
+#   openbao   [--context CONTEXT]       a k3d example's dev OpenBao (k3d-multi: one per cluster, pick
+#                                       it with --context). Rarely needed: each pod seeds itself
+#                                       (clusters/k3d-*/k3d/openbao/values.yaml); use to rotate dev
+#                                       values.
 #   list                                print the keys, write nothing
 # Any other store: write the keys `list` prints with your own tooling, each as
 # {"value": "<secret>"}.
@@ -19,7 +23,7 @@
 #
 # Values: random for backstage-backend-secret and opensearch-password. The OAuth client
 # secrets MUST equal the client secrets your identity provider has; the defaults below are
-# the ones the sample ThunderID bootstrap declares (flux|argocd/clusters/*/values/thunder.yaml).
+# the ones the sample ThunderID bootstrap declares (flux|argocd/clusters/**/values/thunder.yaml).
 # Override any value with an environment variable, e.g. BACKSTAGE_CLIENT_SECRET=... .
 #
 # Storage format: every key holds {"value": "<secret>"} (a KV entry with field "value" on
@@ -34,7 +38,7 @@ while [[ $# -gt 0 ]]; do
     --context) ctx=(--context "$2"); shift 2 ;;
     --force) force=true; shift ;;
     --dry-run) dry=true; shift ;;
-    -h|--help) sed -n '2,28p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,30p' "$0"; exit 0 ;;
     *) die "unknown option: $1" ;;
   esac
 done
@@ -75,7 +79,7 @@ case "$backend" in
     exists() { return 1; }
     put() { :; }
     dry=true ;;
-  ""|-h|--help) sed -n '2,28p' "$0"; exit 0 ;;
+  ""|-h|--help) sed -n '2,30p' "$0"; exit 0 ;;
   *) die "unknown backend: $backend" ;;
 esac
 
@@ -90,7 +94,7 @@ done < <(contract)
 cat <<'EOF'
 
 Not written here (they appear on their own):
-  openchoreo-trust-gateway-ca, openchoreo-trust-agent-ca-*   pushed by the PushSecrets (trust relay)
+  openchoreo-trust-gateway-ca, openchoreo-trust-agent-ca-*   pushed by the trust relay to the "trust" store
 Optional, add yourself when you enable the feature:
   openchoreo-remote-connect-signing-key   occ remote under Argo CD (argocd/planes/control-plane/install/optional)
 EOF

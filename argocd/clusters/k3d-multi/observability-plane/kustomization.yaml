@@ -1,0 +1,53 @@
+# Argo CD entry point for k3d-multi's observability-plane cluster (openchoreo-op):
+# the observability plane and its modules,
+# receiving telemetry from the other clusters.
+# root-app.yaml points this cluster's Argo CD at this directory. It lists the units this
+# cluster runs (one Application each; order = sync waves) and patches in this cluster's
+# Helm values.
+# Clusters never wait on each other: a unit that needs another cluster stays unhealthy
+# (and retries) until that cluster has done its part.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../../shared/helm-repositories
+  - ../../../shared/gateway-api-crds
+  - ../../../shared/cert-manager
+  - ../../../shared/external-secrets
+  - ../../../shared/kgateway
+  - ../k3d/openbao
+  - ../k3d/secret-store
+  - ../k3d/trust-store
+  - ../k3d/coredns
+  - ../../../planes/observability-plane/install
+  - ../../../planes/observability-plane/modules
+  - ../k3d/opensearch-route
+patches:
+  # Per-cluster Helm values: appended after the unit's own values.yaml (later wins).
+  - target:
+      kind: Application
+      name: openchoreo-observability-plane
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valueFiles/-
+        value: $values/argocd/clusters/k3d-multi/observability-plane/values/observability-plane.yaml
+  - target:
+      kind: Application
+      name: openchoreo-obs-logs-opensearch
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valueFiles/-
+        value: $values/argocd/clusters/k3d-multi/observability-plane/values/obs-logs-opensearch.yaml
+  - target:
+      kind: Application
+      name: openchoreo-obs-traces-opensearch
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valueFiles/-
+        value: $values/argocd/clusters/k3d-multi/observability-plane/values/obs-traces-opensearch.yaml
+  - target:
+      kind: Application
+      name: openchoreo-obs-metrics-prometheus
+    patch: |-
+      - op: add
+        path: /spec/sources/0/helm/valueFiles/-
+        value: $values/argocd/clusters/k3d-multi/observability-plane/values/obs-metrics-prometheus.yaml

@@ -1,0 +1,40 @@
+# Plug k3d-multi's observability-plane cluster (openchoreo-op) into its Flux (>= 2.5):
+#   kubectl --context k3d-openchoreo-op apply -f flux/clusters/k3d-multi/observability-plane/plug.yaml
+# It points that cluster's Flux at this repo and at flux/clusters/k3d-multi/observability-plane, which
+# installs the rest in order (units.yaml). Each of the four clusters has its own plug.yaml.
+#
+# Fork or mirror: scripts/set-git-source.sh <url> [branch] rewrites url and branch.
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: openchoreo
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git
+  ref:
+    branch: main
+  # Only the Flux tree is needed.
+  ignore: |
+    /*
+    !/flux/
+  # Private repo: create a Secret with credentials in flux-system and reference it:
+  # secretRef:
+  #   name: openchoreo-git
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: openchoreo
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: openchoreo
+  path: ./flux/clusters/k3d-multi/observability-plane
+  prune: true
+  wait: false # the units report progress themselves: kubectl -n flux-system get kustomizations

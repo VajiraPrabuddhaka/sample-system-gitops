@@ -1,0 +1,7 @@
+# clusters/k3d-multi/k3d/secret-store: ClusterSecretStore "default" -> this cluster's own
+# OpenBao (k3d only). "trust" is k3d/trust-store.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - serviceaccount.yaml
+  - cluster-secret-store.yaml

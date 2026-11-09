@@ -5,6 +5,7 @@ maps merge, lists replace, null deletes a key).
 
 Usage: scripts/render-values.py <cluster> <component> [--engine flux|argocd]
   e.g. scripts/render-values.py k3d-single control-plane
+       scripts/render-values.py k3d-multi/data-plane collector-logs-opensearch
 Components: see UNITS below. The engine only picks which tree to read; the files are
 identical in both (scripts/check-tree.py enforces it).
 Needs PyYAML (pip install pyyaml).
@@ -31,6 +32,10 @@ UNITS = {
     "obs-metrics-prometheus": "planes/observability-plane/modules/metrics-prometheus",
     "obs-events-otel-collector": "planes/observability-plane/modules/events-otel-collector",
     "obs-finops-opencost": "planes/observability-plane/modules/finops-opencost",
+    "collector-logs-opensearch": "planes/observability-plane/collectors/logs-opensearch",
+    "collector-traces-opensearch": "planes/observability-plane/collectors/traces-opensearch",
+    "collector-metrics-prometheus": "planes/observability-plane/collectors/metrics-prometheus",
+    "collector-events-otel-collector": "planes/observability-plane/collectors/events-otel-collector",
 }
 
 

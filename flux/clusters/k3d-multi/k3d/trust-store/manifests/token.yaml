@@ -1,0 +1,11 @@
+# Token for the shared trust OpenBao (k3d/openbao-trust), created by its setup hook and
+# allowed only the openchoreo-trust-* keys. DEV ONLY: a real installation keeps
+# credentials out of Git (workload identity, or Kubernetes auth against the trust store).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openbao-trust-token
+  namespace: external-secrets
+type: Opaque
+stringData:
+  token: openchoreo-trust-dev-token

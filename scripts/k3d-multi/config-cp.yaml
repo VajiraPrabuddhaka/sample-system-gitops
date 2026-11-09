@@ -1,0 +1,29 @@
+# k3d cluster definition for k3d-multi's control-plane cluster (scripts/k3d-up.sh multi).
+# Verbatim copy of
+# openchoreo/openchoreo@v1.4.0-m.1:install/k3d/multi-cluster/config-cp.yaml
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: openchoreo-cp
+image: rancher/k3s:v1.36.1-k3s1
+servers: 1
+agents: 0
+kubeAPI:
+  hostPort: "6550"
+# Control Plane uses port range 8xxx
+ports:
+  # HTTP traffic to OpenChoreo UI, API (Kgateway LoadBalancer)
+  - port: 8080:8080
+    nodeFilters:
+      - loadbalancer
+  # HTTPS traffic to OpenChoreo UI, API, and Cluster Gateway (Kgateway LoadBalancer)
+  - port: 8443:8443
+    nodeFilters:
+      - loadbalancer
+options:
+  k3s:
+    extraArgs:
+    - arg: "--disable=traefik"
+      nodeFilters:
+        - server:*
+

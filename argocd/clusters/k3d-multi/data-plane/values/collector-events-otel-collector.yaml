@@ -1,0 +1,10 @@
+# Write this cluster's Kubernetes events to the observability plane's OpenSearch: through
+# the host to the observability cluster's TLS passthrough listener (11085), by SNI.
+exporters:
+  opensearch:
+    http:
+      endpoint: https://host.k3d.internal:11085
+      tls:
+        server_name_override: opensearch.observability.openchoreo.localhost
+      headers:
+        Host: opensearch.observability.openchoreo.localhost

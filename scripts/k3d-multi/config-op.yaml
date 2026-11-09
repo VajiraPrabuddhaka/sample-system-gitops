@@ -1,0 +1,45 @@
+# k3d cluster definition for k3d-multi's observability-plane cluster (scripts/k3d-up.sh multi).
+# Verbatim copy of
+# openchoreo/openchoreo@v1.4.0-m.1:install/k3d/multi-cluster/config-op.yaml
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: openchoreo-op
+image: rancher/k3s:v1.36.1-k3s1
+servers: 1
+agents: 0
+kubeAPI:
+  hostPort: "6553"
+# Observability Plane uses port range 11xxx
+ports:
+  # Gateway HTTP for Observer API
+  - port: 11080:11080
+    nodeFilters:
+      - loadbalancer
+  # OpenSearch Dashboard
+  - port: 11081:5601
+    nodeFilters:
+      - loadbalancer
+  # OpenSearch API for Fluent Bit data pushing from DP/WP
+  - port: 11082:9200
+    nodeFilters:
+      - loadbalancer
+  # KGateway TLS for OpenSearch via SNI routing
+  - port: 11085:11085
+    nodeFilters:
+      - loadbalancer
+  # Prometheus for metrics remote write from DP/WP
+  - port: 11084:9091
+    nodeFilters:
+      - loadbalancer
+  # OpenTelemetry Collector for traces from DP/WP
+  - port: 11086:4317
+    nodeFilters:
+      - loadbalancer
+options:
+  k3s:
+    extraArgs:
+      # Disable Traefik ingress controller
+      - arg: "--disable=traefik"
+        nodeFilters:
+          - server:*

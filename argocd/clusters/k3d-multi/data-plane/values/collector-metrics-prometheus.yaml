@@ -1,0 +1,4 @@
+# Remote-write this cluster's metrics to the observability plane's gateway (11080).
+prometheusCustomizations:
+  http:
+    observabilityPlaneUrl: http://host.k3d.internal:11080/api/v1/write

@@ -19,9 +19,12 @@ argocd/      the same for Argo CD: same shape, same values and manifests
     control-plane/         install/  defaults/
     data-plane/            install/  registration/
     workflow-plane/        install/  templates/  registration/
-    observability-plane/   install/  modules/  registration/
+    observability-plane/   install/  modules/  collectors/  registration/
   clusters/
-    k3d-single/            the example: every unit in one local k3d cluster
+    k3d-single/            example: every unit in one local k3d cluster
+    k3d-multi/             example: one k3d cluster per plane
+      control-plane/  data-plane/  workflow-plane/  observability-plane/
+      k3d/                 k3d-only units those four clusters use
 scripts/     k3d-up, verify, validate, set-git-source, seed-secrets, ...
 ```
 
@@ -84,6 +87,52 @@ kubectl -n argocd get applications -w            # openchoreo-* apps sync wave b
 scripts/verify.sh
 ```
 
+## k3d-multi: one cluster per plane
+
+`clusters/k3d-multi/` runs each plane in its own k3d cluster, like OpenChoreo's
+[multi-cluster k3d guide](https://github.com/openchoreo/openchoreo/tree/v1.4.0-m.1/install/k3d/multi-cluster).
+Each subdirectory is one cluster with its own GitOps engine:
+
+| Directory | k3d cluster | Runs |
+|---|---|---|
+| `control-plane/` | `openchoreo-cp` | control plane, ThunderID, every plane registration, the shared trust OpenBao |
+| `data-plane/` | `openchoreo-dp` | data plane; collectors for its logs, traces, metrics and events |
+| `workflow-plane/` | `openchoreo-wp` | workflow plane, build templates, k3d registry; collectors for its logs and events |
+| `observability-plane/` | `openchoreo-op` | observability plane and its modules, receiving the other clusters' telemetry |
+
+Every cluster has its own OpenBao behind `ClusterSecretStore default`. One more OpenBao,
+on the control-plane cluster, sits behind `ClusterSecretStore trust` on all four; only
+the trust relay's CA certificates go through it. Agents, collectors and stores reach the
+other clusters through the host (`host.k3d.internal` and the ports k3d maps).
+
+```bash
+# As above first: scripts/set-git-source.sh <your fork> <branch>, commit, push.
+scripts/k3d-up.sh multi          # four clusters; warns if Docker's inotify limits are too low
+for c in cp:control-plane dp:data-plane wp:workflow-plane op:observability-plane; do
+  flux install --context "k3d-openchoreo-${c%%:*}"
+  kubectl --context "k3d-openchoreo-${c%%:*}" apply -f "flux/clusters/k3d-multi/${c#*:}/plug.yaml"
+done
+scripts/verify.sh --multi
+```
+
+With Argo CD: install it on each cluster, patch each cluster's `argocd-cm` as above, and
+apply `argocd/clusters/k3d-multi/<directory>/root-app.yaml` with that cluster's context.
+
+The clusters can be plugged in in any order. A plane waits (retrying) until the control
+plane has published its gateway CA, and each registration on the control-plane cluster
+becomes Ready once that plane's agent connects. The URLs are the same as k3d-single's.
+Plan for more memory than k3d-single: four k3s servers, four GitOps engines, and
+cert-manager and External Secrets on each cluster.
+
+Where this differs from the upstream guide:
+- Every cluster has its own OpenBao, plus the shared trust one. Upstream runs OpenBao on
+  the data and observability clusters only and copies the CA certificates between
+  clusters by hand.
+- The observability cluster exposes its single-node OpenSearch to the collectors through a
+  TLSRoute (`k3d/opensearch-route`). Upstream switches the logs module to an
+  operator-managed OpenSearch cluster instead, whose chart reads a Secret with Helm
+  `lookup`, which Argo CD can't render.
+
 ## How it works
 
 **Order.** Both engines install the units in the same order. Flux chains one Kustomization
@@ -93,11 +142,11 @@ Application's sync wave.
 | Wave | Units |
 |---|---|
 | 0–11 | `shared/`: Gateway API CRDs, cert-manager, External Secrets, kgateway |
-| 10–20 | k3d only: OpenBao + ClusterSecretStore `default`, CoreDNS rewrite |
+| 10–20 | k3d only: OpenBao + ClusterSecretStores `default` and `trust`, CoreDNS rewrite |
 | 30 | `identity/` (ThunderID) |
 | 40 | `planes/control-plane/install` |
 | 50 | the data, workflow and observability plane `install/` units |
-| 60–61 | workflow templates, observability modules (logs, traces, metrics, events, cost) |
+| 60–61 | workflow templates, observability modules (logs, traces, metrics, events, cost) or, on a cluster without the observability plane, its collectors |
 | 70 | `registration/` units: `ClusterDataPlane`, `ClusterWorkflowPlane`, `ClusterObservabilityPlane`. Healthy only once that plane's agent is connected |
 | 80 | `planes/control-plane/defaults`: default environments, pipeline, component types (upstream, pinned tag) |
 
@@ -110,16 +159,17 @@ ConfigMap `<component>-values`; Argo CD appends it to the Application's `valueFi
 **What a cluster provides.** The units expect a few things they deliberately don't create,
 because they depend on where you run:
 
-| Needed | k3d-single provides | Elsewhere |
+| Needed | k3d provides | Elsewhere |
 |---|---|---|
-| A `ClusterSecretStore` named `default`, writable, shared by every cluster of the installation | OpenBao in dev mode | any ESO provider; seed the keys `scripts/seed-secrets.sh list` prints |
+| A `ClusterSecretStore` named `default`, writable: the secrets this cluster's units read, and where OpenChoreo writes workload and build secrets | each cluster's own OpenBao, in dev mode | any ESO provider, per cluster or shared; seed the keys `scripts/seed-secrets.sh list` prints |
+| A `ClusterSecretStore` named `trust`, writable, the same backend on every cluster of the installation: the trust relay's CA certificates | k3d-single: the same OpenBao; k3d-multi: a shared OpenBao on the control-plane cluster | any ESO provider every cluster can reach; nothing to seed |
 | Hostnames, ports, TLS for the plane gateways | `*.openchoreo.localhost`, plain HTTP | your domain and certificates, in `values/` |
 | A registry for builds | in-cluster registry + k3d `publish-image` template | your registry's `publish-image` template |
 | In-cluster resolution of the public hostnames | CoreDNS rewrite | usually real DNS |
 
 **Trust without copying certificates.** The manual install copies the cluster-gateway CA
 into every plane and pastes each agent's CA into its plane registration. Here, both sides
-publish their CA certificate (public part only) to the secret store with an ESO
+publish their CA certificate (public part only) to the `trust` store with an ESO
 `PushSecret` and read the other side's with an `ExternalSecret`. It works the same in one
 cluster or many, and re-publishes renewed certificates.
 
@@ -131,22 +181,24 @@ the dev OpenBao seeds itself.
 
 1. Copy the example in the engine you use: `cp -r flux/clusters/k3d-single flux/clusters/<name>`
    (or the `argocd/` one), and replace `clusters/k3d-single` with `clusters/<name>` in it.
-2. Drop the `k3d/` units and add your own: at least a `ClusterSecretStore` named `default`.
+2. Drop the `k3d/` units and add your own: at least the `ClusterSecretStore`s `default`
+   and `trust`.
 3. Edit `values/`: hostnames, TLS, load balancer settings.
 4. Adjust the registration patches (where the data plane serves, where the observer is).
 5. `scripts/validate.sh`, commit, push, apply your `plug.yaml` / `root-app.yaml`.
 
 Nothing under `shared/`, `identity/` or `planes/` changes, so new versions of this repo
-merge cleanly. The units can be split across clusters (every `registration/` unit stays on
-the control-plane cluster), but only the single-cluster example ships for now.
+merge cleanly. For planes on separate clusters, start from `k3d-multi` instead: one
+directory per cluster, every `registration/` unit on the control-plane cluster, and
+`planes/observability-plane/collectors` on the clusters that ship telemetry elsewhere.
 
 ## Scripts
 
 | Script | What it does |
 |---|---|
-| `scripts/k3d-up.sh` | Create the k3d cluster for `k3d-single` |
+| `scripts/k3d-up.sh [single\|multi]` | Create the k3d cluster for `k3d-single`, or the four for `k3d-multi` |
 | `scripts/set-git-source.sh [url] [branch]` | Point both engines at your fork (Flux `plug.yaml`, every Argo CD source) |
-| `scripts/verify.sh` | Unit status, trust relay, plane connections, unhealthy pods |
+| `scripts/verify.sh [--context C]... [--multi]` | Unit status, trust relay, plane connections, unhealthy pods, per cluster |
 | `scripts/validate.sh` | Static checks (kustomize, tree parity and references, versions, kubeconform, helm template); CI runs it |
 | `scripts/check-tree.py` | The two trees match, and every path, `dependsOn` and patch target exists |
 | `scripts/render-values.py <cluster> <c>` | Print the merged Helm values for one component |

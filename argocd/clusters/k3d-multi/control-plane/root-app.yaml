@@ -1,0 +1,26 @@
+# Plug k3d-multi's control-plane cluster (openchoreo-cp) into its Argo CD, after the
+# argocd-cm health checks in argocd/argocd-cm-patch.yaml:
+#   kubectl --context k3d-openchoreo-cp apply -f argocd/clusters/k3d-multi/control-plane/root-app.yaml
+# It syncs argocd/clusters/k3d-multi/control-plane, which creates one Application per unit,
+# ordered by sync wave. Each of the four clusters has its own root-app.yaml.
+#
+# Fork or mirror: scripts/set-git-source.sh <url> [branch] rewrites every repoURL and
+# targetRevision that points at this repo.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openchoreo
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  source:
+    repoURL: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git
+    targetRevision: main
+    path: argocd/clusters/k3d-multi/control-plane
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

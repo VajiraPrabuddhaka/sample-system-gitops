@@ -1,0 +1,32 @@
+# Argo CD: publish-image and generate-workload ClusterWorkflowTemplates for k3d: push to
+# the in-cluster registry at host.k3d.internal:10082, reach API/IdP via the k3d load balancer.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: openchoreo-k3d-workflow-templates
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "60"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  sources:
+    - repoURL: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git
+      targetRevision: main
+      path: argocd/clusters/k3d-multi/k3d/workflow-templates/manifests
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: -1 # keep retrying: other units (or clusters) may still be converging
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
