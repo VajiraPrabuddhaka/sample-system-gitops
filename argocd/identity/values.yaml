@@ -20,3 +20,12 @@ secrets:
   persistence:
     annotations:
       argocd.argoproj.io/sync-wave: "-5"
+
+# Argo CD: the HTTPRoute attaches to the control plane's Gateway (values/thunder.yaml),
+# which the control plane unit creates later. Argo CD reports an HTTPRoute Progressing
+# until a Gateway accepts it, so ThunderID would never turn Healthy and the control plane
+# would never start. Leave the route out of ThunderID's health; it is accepted once the
+# control plane's Gateway exists.
+httproute:
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
