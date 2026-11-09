@@ -1,4 +1,22 @@
-# ThunderID (default identity provider). Everything it needs is cluster-specific
+# ThunderID (default identity provider). Everything else it needs is cluster-specific
 # (public URL, hostnames, OAuth clients and redirect URIs), so it lives in
 # clusters/<name>/values/thunder.yaml.
-{}
+#
+# Argo CD: the chart creates its PVCs as Helm pre-install hooks (weight -15) and the setup
+# Job that mounts them as a later one (weight -5). Argo CD runs them as PreSync hooks, one
+# wave per weight, and waits for each wave to be Healthy before the next. A PVC on a
+# WaitForFirstConsumer storage class (k3s local-path, most cloud defaults) stays Pending
+# until a pod uses it, so the sync would wait forever before ever starting the setup Job.
+# Putting the PVCs in the Job's wave lets the Job's pod bind them. Helm (Flux) ignores
+# the annotation.
+persistence:
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+certs:
+  persistence:
+    annotations:
+      argocd.argoproj.io/sync-wave: "-5"
+secrets:
+  persistence:
+    annotations:
+      argocd.argoproj.io/sync-wave: "-5"
