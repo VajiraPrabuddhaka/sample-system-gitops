@@ -15,7 +15,7 @@ spec:
     server: https://kubernetes.default.svc
     namespace: default
   sources:
-    - repoURL: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git
+    - repoURL: https://github.com/vajiraprabuddhaka/sample-system-gitops.git
       targetRevision: main
       path: argocd/planes/workflow-plane/templates/manifests
   syncPolicy:

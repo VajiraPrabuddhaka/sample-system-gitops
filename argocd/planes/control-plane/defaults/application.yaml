@@ -21,7 +21,7 @@ spec:
       path: samples/getting-started
       directory:
         include: all.yaml
-    - repoURL: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git
+    - repoURL: https://github.com/vajiraprabuddhaka/sample-system-gitops.git
       targetRevision: main
       path: argocd/planes/control-plane/defaults/manifests
   syncPolicy:

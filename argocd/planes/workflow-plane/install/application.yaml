@@ -24,10 +24,10 @@ spec:
         releaseName: openchoreo-workflow-plane
         valueFiles:
           - $values/argocd/planes/workflow-plane/install/values.yaml
-    - repoURL: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git
+    - repoURL: https://github.com/vajiraprabuddhaka/sample-system-gitops.git
       targetRevision: main
       ref: values
-    - repoURL: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git
+    - repoURL: https://github.com/vajiraprabuddhaka/sample-system-gitops.git
       targetRevision: main
       path: argocd/planes/workflow-plane/install/manifests
   # cert-manager and ESO inject CA bundles into webhooks and CRD conversion configs;

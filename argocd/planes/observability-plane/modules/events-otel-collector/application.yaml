@@ -23,7 +23,7 @@ spec:
         releaseName: observability-events-otel-collector
         valueFiles:
           - $values/argocd/planes/observability-plane/modules/events-otel-collector/values.yaml
-    - repoURL: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git
+    - repoURL: https://github.com/vajiraprabuddhaka/sample-system-gitops.git
       targetRevision: main
       ref: values
   # cert-manager and ESO inject CA bundles into webhooks and CRD conversion configs;

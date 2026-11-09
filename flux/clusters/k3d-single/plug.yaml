@@ -11,7 +11,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 5m
-  url: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git
+  url: https://github.com/vajiraprabuddhaka/sample-system-gitops.git
   ref:
     branch: main
   # Only the Flux tree is needed.
