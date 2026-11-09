@@ -1,0 +1,14 @@
+# flux/planes/observability-plane/collectors/traces-opensearch: telemetry collector traces-opensearch.
+# One Flux Kustomization applies this directory, alone or through ../kustomization.yaml
+# (flux/clusters/<name>/units.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - release.yaml
+configMapGenerator:
+  - name: collector-traces-opensearch-values-base
+    namespace: flux-system
+    files:
+      - values.yaml
+configurations:
+  - ../../../../kustomizeconfig.yaml

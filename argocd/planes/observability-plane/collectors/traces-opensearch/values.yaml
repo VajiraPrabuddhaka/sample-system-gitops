@@ -1,0 +1,17 @@
+# OpenTelemetry collector in exporter mode: takes this cluster's traces and forwards
+# them to the observability plane on another cluster, which runs this module in
+# multiClusterReceiver mode. The cluster sets where
+# (opentelemetryCollectorCustomizations.http.observabilityPlaneUrl and
+# observabilityPlaneVirtualHost).
+global:
+  installationMode: multiClusterExporter
+openSearch:
+  enabled: false
+openSearchCluster:
+  enabled: false
+openSearchSetup:
+  enabled: false
+adapter:
+  enabled: false
+opentelemetry-collector:
+  extraEnvs: [] # no OpenSearch here, so no credentials

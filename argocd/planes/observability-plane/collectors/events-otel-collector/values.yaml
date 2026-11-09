@@ -1,0 +1,33 @@
+# Kubernetes events from this cluster into the k8s-events index of the observability
+# plane's OpenSearch on another cluster. The cluster sets where
+# (exporters.opensearch.http.endpoint, plus tls.server_name_override and a Host header
+# for the observability plane's TLS passthrough listener). The credentials Secret comes
+# with the logs-opensearch collector.
+collector:
+  extraEnv:
+    - name: OPENSEARCH_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: opensearch-admin-credentials
+          key: username
+    - name: OPENSEARCH_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: opensearch-admin-credentials
+          key: password
+extraExtensions:
+  basicauth/opensearch:
+    client_auth:
+      username: ${env:OPENSEARCH_USERNAME}
+      password: ${env:OPENSEARCH_PASSWORD}
+exporters:
+  opensearch:
+    logs_index: "k8s-events"
+    logs_index_time_format: "yyyy-MM-dd"
+    http:
+      tls:
+        insecure_skip_verify: true
+      auth:
+        authenticator: basicauth/opensearch
+pipelineExporters:
+  - opensearch

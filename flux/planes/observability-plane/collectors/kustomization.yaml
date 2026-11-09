@@ -1,0 +1,13 @@
+# flux/planes/observability-plane/collectors: ship a cluster's telemetry to an
+# observability plane that runs on another cluster (the observability plane's own
+# cluster uses ../modules instead).
+# One Flux Kustomization applies all four; a cluster that wants fewer lists the
+# subdirectories it wants instead (events needs logs-opensearch, which brings the
+# namespace and the OpenSearch credentials).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - logs-opensearch
+  - traces-opensearch
+  - metrics-prometheus
+  - events-otel-collector

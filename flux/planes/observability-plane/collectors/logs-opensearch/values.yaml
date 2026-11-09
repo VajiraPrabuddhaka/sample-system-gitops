@@ -1,0 +1,15 @@
+# Fluent Bit only: ship this cluster's container logs to the OpenSearch of an
+# observability plane on another cluster; nothing that would run OpenSearch here.
+# The cluster sets where to send them (fluent-bit.openSearchHost, openSearchPort and
+# openSearchVHost, the SNI of the observability plane's TLS passthrough listener) and
+# fluentBitCustomizations.clusterInstance (required: names this cluster in the logs).
+openSearch:
+  enabled: false
+openSearchCluster:
+  enabled: false
+openSearchSetup:
+  enabled: false
+adapter:
+  enabled: false
+fluent-bit:
+  enabled: true

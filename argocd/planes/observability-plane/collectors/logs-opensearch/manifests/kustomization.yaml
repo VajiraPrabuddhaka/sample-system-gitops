@@ -1,0 +1,7 @@
+# planes/observability-plane/collectors/logs-opensearch: plain manifests (both engines
+# apply this directory). The events collector uses the same credentials.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - opensearch-admin-credentials.yaml

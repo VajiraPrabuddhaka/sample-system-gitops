@@ -1,0 +1,14 @@
+# Prometheus in agent mode: scrapes this cluster and remote-writes to the observability
+# plane on another cluster, which runs this module in multiClusterReceiver mode. The
+# cluster sets where (prometheusCustomizations.http.observabilityPlaneUrl, ending in
+# /api/v1/write).
+global:
+  installationMode: multiClusterExporter
+kube-prometheus-stack:
+  prometheus:
+    enabled: false
+  alertmanager:
+    enabled: false
+  kubelet:
+    serviceMonitor:
+      authorization: null
