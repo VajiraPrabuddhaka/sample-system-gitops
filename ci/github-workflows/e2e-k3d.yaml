@@ -29,7 +29,7 @@ jobs:
           set -euo pipefail
           # Point the GitRepository at this repository and branch (applied, not committed:
           # the units only need the source to resolve).
-          sed -e "s|url: https://github.com/REPLACE_ME_GITHUB_ORG/sample-system-gitops.git|url: ${{ github.server_url }}/${{ github.repository }}|" \
+          sed -e "s|^  url: .*|  url: ${{ github.server_url }}/${{ github.repository }}|" \
               -e "s|branch: main|branch: ${{ github.ref_name }}|" \
               flux/clusters/k3d-single/plug.yaml | kubectl apply -f -
       - name: Wait for every plane to connect, then the defaults

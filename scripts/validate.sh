@@ -105,7 +105,7 @@ else
 fi
 
 log "6/6 placeholders"
-found="$(grep -rhoE 'REPLACE_ME_[A-Z0-9_]+' flux argocd | sort -u | tr '\n' ' ')"
+found="$( (grep -rhoE 'REPLACE_ME_[A-Z0-9_]+' flux argocd || true) | sort -u | tr '\n' ' ')"
 if [[ -n "$found" ]]; then
   info "to fill: ${found}(scripts/set-git-source.sh <your repo URL> [branch])"
   $strict && fail=1
