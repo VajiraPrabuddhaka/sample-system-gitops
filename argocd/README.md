@@ -1,44 +1,53 @@
 # OpenChoreo with Argo CD
 
-Everything here is for Argo CD. `../flux` is the same thing for Flux; you only need one.
+This directory contains everything you need to install OpenChoreo with Argo CD. The `../flux` directory has the same setup for Flux, and you only need one of them.
 
-## Plug in
+## Plug In the Repository
 
-1. Install Argo CD **3.x** from its own guide:
-   https://argo-cd.readthedocs.io/en/stable/getting_started/ (namespace `argocd`).
-2. Add the health checks this repo relies on (installed with Helm? put the same keys under
-   `configs.cm` instead):
+Run the following steps from the root of the repository:
+
+1. Install Argo CD **3.x** in the `argocd` namespace by following its [getting started guide](https://argo-cd.readthedocs.io/en/stable/getting_started/).
+
+2. Add the health checks this repository relies on:
+
    ```bash
    kubectl -n argocd patch configmap argocd-cm --patch-file argocd/argocd-cm-patch.yaml
    ```
-   They make the root app wait for each wave to be Healthy, and plane registrations
-   Healthy only once their agent connects. Without them everything still converges through
-   retries, just without ordering.
-3. `kubectl apply -f clusters/k3d-single/root-app.yaml`. It syncs `clusters/k3d-single`,
-   which creates one Application per unit.
-4. Watch: `kubectl -n argocd get applications -w`.
 
-One cluster per plane (`clusters/k3d-multi`): do steps 1 and 2 on each of the four
-clusters, then apply that cluster's `clusters/k3d-multi/<plane>/root-app.yaml` with its
-context (see the k3d-multi section of the top-level README). Each cluster's Argo CD
-manages only its own cluster.
+   These health checks make the root app wait until each wave is Healthy, and mark a plane registration as Healthy only once its agent connects. Without them, everything still converges through retries, but without any ordering.
 
-Every Application names this repo, so on a fork or mirror run
-`scripts/set-git-source.sh <url> [branch]` and push before step 3.
+   > [!TIP]
+   > If you installed Argo CD with Helm, put the same keys under `configs.cm` instead.
+
+3. Apply the root app. It syncs `clusters/k3d-single`, which creates one Application per unit:
+
+   ```bash
+   kubectl apply -f argocd/clusters/k3d-single/root-app.yaml
+   ```
+
+4. Watch the Applications sync:
+
+   ```bash
+   kubectl -n argocd get applications -w
+   ```
+
+### One Cluster per Plane (k3d-multi)
+
+To run each plane in its own cluster (`clusters/k3d-multi`), do steps 1 and 2 on each of the four clusters. Then apply that cluster's `clusters/k3d-multi/<plane>/root-app.yaml` using its context. Each cluster's Argo CD manages only its own cluster. Refer to the [multi-cluster section](../README.md#multi-cluster-setup-on-k3d-k3d-multi) of the top-level README for more details.
+
+### Forks and Mirrors
+
+Every Application refers to this repository by its URL. So if you are using a fork or a mirror, run the following command and push the change before step 3:
+
+```bash
+scripts/set-git-source.sh <url> [branch]
+```
 
 ## Conventions
 
-- **Unit** = a directory under `shared/`, `identity/` or `planes/`. Its `application.yaml`
-  holds the Application(s), named `openchoreo-*`, in `argocd`, project `default`, with a
-  sync wave. Its `kustomization.yaml` lists only `application.yaml`; `values.yaml` and
-  `manifests/` are read by the Application from Git.
-- **Charts** come from public OCI registries, declared once in `shared/helm-repositories`
-  (repository Secrets, no credentials), so no repository setup in Argo CD is needed.
-- **Per-cluster values**: `clusters/<name>/kustomization.yaml` appends
-  `$values/argocd/clusters/<name>/values/<component>.yaml` to the Application's `valueFiles`.
-- **Registration details** (data plane host/port, observer URL) are `kustomize.patches` the
-  cluster adds to the registration Applications.
-- **Drift from injected CA bundles** (cert-manager, ESO) is ignored per Helm Application
-  (`ignoreDifferences` + `RespectIgnoreDifferences=true`).
-- **Helm `lookup`** isn't available under Argo CD: see `planes/control-plane/install/optional/`
-  for the `occ remote` signing key.
+- **Unit** - A directory under `shared/`, `identity/` or `planes/`. Its `application.yaml` holds the Application(s), named `openchoreo-*`, in the `argocd` namespace and the `default` project, with a sync wave. Its `kustomization.yaml` lists only `application.yaml`. The Application reads `values.yaml` and `manifests/` directly from Git.
+- **Charts** - Charts come from public OCI registries, declared once in `shared/helm-repositories` as repository Secrets without credentials. This means you do not need to set up any repositories in Argo CD.
+- **Per-cluster values** - `clusters/<name>/kustomization.yaml` appends `$values/argocd/clusters/<name>/values/<component>.yaml` to the Application's `valueFiles`.
+- **Registration details** - The data plane host and port and the observer URL are `kustomize.patches` that the cluster adds to the registration Applications.
+- **Drift from injected CA bundles** - cert-manager and ESO inject CA bundles into some resources. This drift is ignored per Helm Application using `ignoreDifferences` + `RespectIgnoreDifferences=true`.
+- **Helm `lookup`** - Helm `lookup` is not available under Argo CD. See `planes/control-plane/install/optional/` for how the `occ remote` signing key is handled instead.
