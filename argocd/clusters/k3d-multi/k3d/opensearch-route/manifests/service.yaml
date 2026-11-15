@@ -1,0 +1,21 @@
+# A second Service for the logs module's OpenSearch, used only by the TLSRoute in
+# tls-route.yaml. The logs module's chart attaches a kgateway BackendConfigPolicy to the
+# Service `opensearch`, which makes the gateway open its own TLS connection to OpenSearch.
+# That suits HTTP routes, but on a passthrough TLSRoute it wraps the client's TLS inside
+# the gateway's, and the client gets a plain-text reply ("wrong version number"). This
+# Service selects the same pod and has no policy, so the gateway forwards the client's
+# TLS stream as it is. The port is named `tcp` so nothing infers TLS from its name.
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch-passthrough
+  namespace: openchoreo-observability-plane
+spec:
+  selector:
+    app.kubernetes.io/instance: observability-logs-opensearch
+    app.kubernetes.io/name: opensearch
+  ports:
+    - name: tcp
+      port: 9200
+      targetPort: 9200
+      protocol: TCP
