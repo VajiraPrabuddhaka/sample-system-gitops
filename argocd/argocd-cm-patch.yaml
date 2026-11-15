@@ -8,6 +8,10 @@
 data:
   # App of apps: the root Application waits for each child Application to be Healthy
   # before the next sync wave (Argo CD removed this check by default in 1.8).
+  # A child that is still syncing counts as Progressing even when its health says
+  # Healthy: while its PreSync hooks run (e.g. the workflow plane's pre-install job
+  # that installs the Argo Workflows CRDs), Argo CD reports it Healthy before it has
+  # applied anything, and the next wave would start too early.
   resource.customizations.health.argoproj.io_Application: |
     hs = {}
     hs.status = "Progressing"
@@ -17,6 +21,11 @@ data:
       if obj.status.health.message ~= nil then
         hs.message = obj.status.health.message
       end
+    end
+    if hs.status == "Healthy" and obj.status.operationState ~= nil
+        and obj.status.operationState.phase == "Running" then
+      hs.status = "Progressing"
+      hs.message = "Sync in progress"
     end
     return hs
   # OpenChoreo plane registrations are Healthy once their cluster agent is connected
